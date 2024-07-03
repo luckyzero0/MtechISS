@@ -10,8 +10,16 @@ def export_model():
 
 def train_model():
     pass
+    # with open(MODEL_PATH, 'wb') as f:
+    #     pickle.dump(model, f)
+    # pass
 
 
 
 def predict():
-    pass
+
+    # with open(MODEL_PATH, 'rb') as f:
+    #     model = pickle.load(f)
+    # model.predict()
+
+    return {}
