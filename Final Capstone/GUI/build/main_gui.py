@@ -117,37 +117,10 @@ def create_month_grid(func_canvas, month_data, selected=0):
         fill="#000000",
         font=("ArimoRoman Bold", 20 * -1)
     )
-
-    button_image_4 = PhotoImage(
-        file=relative_to_assets("button_4.png"))
-    button_4 = Button(
-        func_canvas,
-        image=button_image_4,
-        borderwidth=1,
-        highlightthickness=0,
-        command=lambda: print("right button clicked"),
-        relief="flat",
-        background='white'
-    )
-    button_4.place(
-        x=470.0,
-        y=85.0,
-    )
-
-    button_image_5 = PhotoImage(
-        file=relative_to_assets("button_5.png"))
-    button_5 = Button(
-        func_canvas,
-        image=button_image_5,
-        borderwidth=1,
-        highlightthickness=0,
-        command=lambda: print("left button clicked"),
-        relief="flat",
-        background='white')
-    button_5.place(
-        x=368.0,
-        y=85.0,
-    )
+    button4, img = create_button(func_canvas, file_asset='button_4.png', positions=dict(x=470,y=85), command=lambda: print("right button clicked"))
+    button5, img = create_button(func_canvas, file_asset='button_5.png', positions=dict(x=368, y=85),command=lambda: print("left button clicked"))
+    global YEAR_BTN
+    YEAR_BTN = [(button4, img), (button5, img)]
 
     for idx, (k, v) in enumerate(month_data.items()):
         if k == 'Year':
