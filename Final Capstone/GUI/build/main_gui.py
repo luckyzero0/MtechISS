@@ -11,7 +11,8 @@ ASSETS_PATH = Path(r"C:\Users\USER\PycharmProjects\MtechISS\Final Capstone\GUI\b
 
 global window, canvas, func_canvas, STATE, DEPARTMENT
 
-DEPARTMENT = ['ALL','Orthopaedic Surgery','Otolaryngology','Gastroenterology']
+DEPARTMENT = ['ALL', 'Orthopaedic Surgery', 'Otolaryngology', 'Gastroenterology']
+
 
 # MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
 #
@@ -42,15 +43,17 @@ DEPARTMENT = ['ALL','Orthopaedic Surgery','Otolaryngology','Gastroenterology']
 
 def get_all_data(*args):
     print(f"Get All Data")
-def get_month_data_temp(*args):
 
-    selected_month = func_canvas.gettags('current')[0].replace("_btm","")
+
+def get_month_data_temp(*args):
+    selected_month = func_canvas.gettags('current')[0].replace("_btm", "")
     selected_month_idx = month2idx(selected_month)
     STATE['month'] = selected_month_idx
 
     clear_canvas_func()
     create_main_screen(func_canvas, startup=False)
     # print(f"Get Month Data {func_canvas.gettags('current')[0]}")
+
 
 def get_department(value):
     from controller_db import long_department_to_code
@@ -71,16 +74,19 @@ def create_month(x, y, month_txt, per_txt, rec_colour, SIZE_OF_WIDGET=(120, 110)
     :return: Frame
     """
 
-    main_rec = func_canvas.create_rectangle(x, y, x + SIZE_OF_WIDGET[0], y + SIZE_OF_WIDGET[1], fill='#FFFFFF', width=outline_width, outline=outline, tags=f'{month_txt}_btm')
+    main_rec = func_canvas.create_rectangle(x, y, x + SIZE_OF_WIDGET[0], y + SIZE_OF_WIDGET[1], fill='#FFFFFF',
+                                            width=outline_width, outline=outline, tags=f'{month_txt}_btm')
     func_canvas.tag_bind(f'{month_txt}_btm', "<Button-1>", get_month_data_temp)
 
     CENTER_X_OF_WIDGET = (x + SIZE_OF_WIDGET[0] / 2)
     func_canvas.create_text(CENTER_X_OF_WIDGET, y + 17, anchor="center", text=month_txt, fill="#000000",
-                       font=("ArimoRoman Bold", 20 * -1))
+                            font=("ArimoRoman Bold", 20 * -1))
     PAD = 20
-    func_canvas.create_rectangle(x + PAD, y + 40, x + SIZE_OF_WIDGET[0] - PAD, y + 40 + 20, fill=rec_colour, outline='black')
+    func_canvas.create_rectangle(x + PAD, y + 40, x + SIZE_OF_WIDGET[0] - PAD, y + 40 + 20, fill=rec_colour,
+                                 outline='black')
     func_canvas.create_text(CENTER_X_OF_WIDGET, y + 40 + 20 + 17, anchor='center', text=per_txt, fill='#000000',
-                       font=("ArimoRoman Bold", 20 * -1))
+                            font=("ArimoRoman Bold", 20 * -1))
+
 
 # Rectangle for dropdown
 def create_month_grid(func_canvas, month_data, selected=0):
@@ -155,11 +161,12 @@ def create_month_grid(func_canvas, month_data, selected=0):
                 outline = '#000000'
                 width = 1
             CUR_XY.update(v._asdict())
-            create_month(outline_width=width, outline=outline,SIZE_OF_WIDGET=SIZE_OF_WIDGET, **(CUR_XY))
+            create_month(outline_width=width, outline=outline, SIZE_OF_WIDGET=SIZE_OF_WIDGET, **(CUR_XY))
             if k != 'Jun':
                 CUR_XY = {'x': CUR_XY['x'] + X_PAD + SIZE_OF_WIDGET[0], 'y': CUR_XY['y']}
             else:
                 CUR_XY = {'x': START_GRID[0], 'y': START_GRID[1] + Y_PAD + SIZE_OF_WIDGET[1]}
+
 
 def create_statistic(func_canvas, statistic):
     TITLE = (382, 380)
@@ -186,35 +193,37 @@ def create_statistic(func_canvas, statistic):
         fill="",
         outline="black")
     statistic_d = {}
-    for idx, (k,v) in enumerate(statistic.items()):
-        key_var=tkinter.StringVar(func_canvas, value=k+":")
+    for idx, (k, v) in enumerate(statistic.items()):
+        key_var = tkinter.StringVar(func_canvas, value=k + ":")
 
-
-        t_box = tkinter.Label(master=func_canvas, textvariable=key_var, bg='#edfff6',  font=("ArimoRoman Bold", 20 * -1,), justify='right')
+        t_box = tkinter.Label(master=func_canvas, textvariable=key_var, bg='#edfff6',
+                              font=("ArimoRoman Bold", 20 * -1,), justify='right')
         func_canvas.create_window((CUR_POS[0], CUR_POS[1]), window=t_box)
 
-
-        v_var=tkinter.StringVar(func_canvas, value=v)
-        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg="#edfff6", font=("ArimoRoman Bold", 20 * -1), justify='left', )
+        v_var = tkinter.StringVar(func_canvas, value=v)
+        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg="#edfff6", font=("ArimoRoman Bold", 20 * -1),
+                              justify='left', )
 
         func_canvas.create_window((CUR_POS[0] + SPACE, CUR_POS[1]), window=v_box)
 
         CUR_POS = (CUR_POS[0], CUR_POS[1] + Y_PAD)
         if idx == 2:
             CUR_POS = (START_POS[0] + X_PAD, START_POS[1])
-        statistic_d[idx] = {'k':key_var, 'v':v_var}
+        statistic_d[idx] = {'k': key_var, 'v': v_var}
     return statistic, statistic_d
+
+
 def create_main_screen(func_canvas, startup=False):
     global statistics, MONTH_DATA, statistics_d, STATE
 
     from controller_db import get_all_months_data, refresh_database, refresh_config
     refresh_database()
     refresh_config()
-    if startup==True:
-       STATE = dict(year=datetime.now().year,
-                    month=datetime.now().month,
-                    department='ALL'
-                    )
+    if startup == True:
+        STATE = dict(year=datetime.now().year,
+                     month=datetime.now().month,
+                     department='ALL'
+                     )
     selected_year = STATE.get('year')
     selected_month = STATE.get('month')
     selected_department = STATE.get('department')
@@ -228,8 +237,9 @@ def create_main_screen(func_canvas, startup=False):
     selected_department_long = code_to_long_department(selected_department)
     cur_select_department.set(selected_department_long)
     dropdown = tkinter.OptionMenu(func_canvas, cur_select_department, *DEPARTMENT, command=get_department)
-    dropdown.configure(bg="#030C5D",fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0, highlightthickness=0)
-    func_canvas.create_window((450,40), window=dropdown)
+    dropdown.configure(bg="#030C5D", fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0,
+                       highlightthickness=0)
+    func_canvas.create_window((450, 40), window=dropdown)
     create_month_grid(func_canvas, MONTH_DATA, selected=selected_month)
     statistics, statistics_d = create_statistic(func_canvas, statistics)
 
