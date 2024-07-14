@@ -11,8 +11,24 @@ def refresh_database():
 
 def refresh_config():
     global department_config
-    department_config = pd.read_excel(DB_FILE, sheet_name='Department_config')
+    department_config = pd.read_excel(DB_CONFIG, sheet_name='Department_config')
     return department_config
+
+def long_department_to_code(long_s:str):
+
+    if long_s.upper() == 'ALL':
+        return 'ALL'
+    mapper = department_config[['Department Short Code','Department Long Code']].drop_duplicates()
+    return mapper[mapper['Department Long Code'] == long_s]['Department Short Code'].iloc[0]
+
+def code_to_long_department(code:str):
+
+    if code.upper() == 'ALL':
+        return 'ALL'
+    mapper = department_config[['Department Short Code','Department Long Code']].drop_duplicates()
+    return mapper[mapper['Department Short Code'] == code]['Department Long Code'].iloc[0]
+
+
 
 def month2idx(months="Jul"):
     MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']

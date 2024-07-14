@@ -8,9 +8,6 @@ ASSETS_PATH = Path(r"C:\Users\USER\PycharmProjects\MtechISS\Final Capstone\GUI\b
 def relative_to_assets(path: str):
     return str(Path(ASSETS_PATH, path))
 
-def option_menu(value):
-    print(f"Currently selected {value}")
-
 def create_button(window, file_asset: str, positions: dict, command: Callable) -> tkinter.Button:
 
     img = PhotoImage(file=relative_to_assets(file_asset))
@@ -18,7 +15,6 @@ def create_button(window, file_asset: str, positions: dict, command: Callable) -
     button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat')
     button.place(**positions)
     return img, button
-
 
 def start_up():
     window = Tk()
@@ -111,7 +107,7 @@ def nav_model_management():
 def nav_main_gui():
     clear_canvas_func()
     from main_gui import create_main_screen
-    create_main_screen(func_canvas)
+    create_main_screen(func_canvas, startup=True)
 
 def start_side_button(window):
 

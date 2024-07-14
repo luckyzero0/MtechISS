@@ -4,14 +4,14 @@ from datetime import datetime
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 from main_util import *
 from collections import namedtuple
-from controller_db import month2idx
+from controller_db import month2idx, code_to_long_department
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = Path(r"C:\Users\USER\PycharmProjects\MtechISS\Final Capstone\GUI\build\assets\frame0")
 
-global window, canvas, func_canvas, state
-state = {'month_selected':'2024'}
-DEPARTMENT = ['All','Orthopaedic Surgery','Otolaryngology','Gastroenterology']
+global window, canvas, func_canvas, STATE, DEPARTMENT
+
+DEPARTMENT = ['ALL','Orthopaedic Surgery','Otolaryngology','Gastroenterology']
 
 # MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
 #
@@ -46,11 +46,22 @@ def get_month_data_temp(*args):
 
     selected_month = func_canvas.gettags('current')[0].replace("_btm","")
     selected_month_idx = month2idx(selected_month)
+    STATE['month'] = selected_month_idx
+
     clear_canvas_func()
-    create_main_screen(func_canvas, month=selected_month_idx)
+    create_main_screen(func_canvas, startup=False)
     # print(f"Get Month Data {func_canvas.gettags('current')[0]}")
 
+def get_department(value):
+    from controller_db import long_department_to_code
+    short_code_department = long_department_to_code(value)
+    STATE['department'] = short_code_department
 
+    clear_canvas_func()
+    create_main_screen(func_canvas, startup=False)
+
+    # print(f"Currently selected {value}, {short_code_department}")
+    # print(f"Current State", STATE)
 
 
 def create_month(x, y, month_txt, per_txt, rec_colour, SIZE_OF_WIDGET=(120, 110), outline='#000000', outline_width=1):
@@ -193,23 +204,30 @@ def create_statistic(func_canvas, statistic):
             CUR_POS = (START_POS[0] + X_PAD, START_POS[1])
         statistic_d[idx] = {'k':key_var, 'v':v_var}
     return statistic, statistic_d
-def create_main_screen(func_canvas, year=0, month=0, department=""):
-    global statistics, MONTH_DATA, statistics_d
+def create_main_screen(func_canvas, startup=False):
+    global statistics, MONTH_DATA, statistics_d, STATE
+
     from controller_db import get_all_months_data, refresh_database, refresh_config
     refresh_database()
     refresh_config()
-    selected_year = datetime.now().year if year == 0 else year
-    selected_month = datetime.now().month if month == 0 else month
-    department = 'ALL' if department=="" else department
-    MONTH_DATA, statistics = get_all_months_data(selected_year, selected_month, department)
+    if startup==True:
+       STATE = dict(year=datetime.now().year,
+                    month=datetime.now().month,
+                    department='ALL'
+                    )
+    selected_year = STATE.get('year')
+    selected_month = STATE.get('month')
+    selected_department = STATE.get('department')
+    MONTH_DATA, statistics = get_all_months_data(selected_year, selected_month, selected_department)
     REC = [30, 20, 865, 65]
     func_canvas.create_rectangle(
         *REC,
         fill="#030C5D",
         outline="black")
     cur_select_department = tkinter.StringVar()
-    cur_select_department.set(department)
-    dropdown = tkinter.OptionMenu(func_canvas, cur_select_department, *DEPARTMENT, command=option_menu)
+    selected_department_long = code_to_long_department(selected_department)
+    cur_select_department.set(selected_department_long)
+    dropdown = tkinter.OptionMenu(func_canvas, cur_select_department, *DEPARTMENT, command=get_department)
     dropdown.configure(bg="#030C5D",fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0, highlightthickness=0)
     func_canvas.create_window((450,40), window=dropdown)
     create_month_grid(func_canvas, MONTH_DATA, selected=selected_month)
@@ -220,6 +238,6 @@ if __name__ == "__main__":
     global window, canvas, func_canvas
     window, canvas, func_canvas, info = start_up()
     side_buttons = start_side_button(window)
-    create_main_screen(func_canvas)
+    create_main_screen(func_canvas, startup=True)
     window.resizable(False, False)
     window.mainloop()
