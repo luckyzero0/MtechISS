@@ -4,21 +4,24 @@ from typing import Callable
 import tkinter
 
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = Path(r"C:\Users\USER\PycharmProjects\MtechISS\Final Capstone\GUI\build\assets\frame0")
+ASSETS_PATH = Path(r".\assets\img")
 def relative_to_assets(path: str):
     return str(Path(ASSETS_PATH, path))
 
 def create_button(window, file_asset: str, positions: dict, command: Callable) -> tkinter.Button:
 
     img = PhotoImage(file=relative_to_assets(file_asset))
-    print(relative_to_assets(file_asset), positions)
-    button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat')
-    button.place(**positions)
+
+    button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat', fg='green')
+    try:
+        window.create_window((positions['x'], positions['y']), window=button)
+    except AttributeError:
+        button.place(**positions)
     return img, button
 
 def start_up():
     window = Tk()
-
+    window.title("ApptInsight")
     window.geometry("1186x724")
     window.configure(bg="#FFFFFF")
 
@@ -113,24 +116,24 @@ def start_side_button(window):
 
     SIDE_TOOL_CONFIG = {
         'add_new_button': {
-            'file_asset': 'button_1.png',
+            'file_asset': 'add_new_button.png',
             'positions': dict(x=15.0, y=110.0),
             'command': lambda: nav_add_new()
         },
         'edit_button': {
-            'file_asset': 'button_2.png',
+            'file_asset': 'edit_existing_button.png',
             'positions': dict(x=15.0, y=190.0),
             'command': lambda: print("Edit Existing Clicked")
         },
 
         'model_button': {
-            'file_asset': 'button_6.png',
+            'file_asset': 'model_management_button.png',
             'positions': dict(x=15.0, y=500.0, width=275.0),
             'command': lambda: nav_model_management()
         },
 
         'config_button': {
-            'file_asset': 'button_3.png',
+            'file_asset': 'configuration_button.png',
             'positions': dict(x=15.0, y=580.0),
             'command': lambda: print("Configuration Clicked")
         },

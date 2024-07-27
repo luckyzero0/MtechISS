@@ -7,12 +7,11 @@ from collections import namedtuple
 from controller_db import month2idx, code_to_long_department
 
 OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = Path(r"C:\Users\USER\PycharmProjects\MtechISS\Final Capstone\GUI\build\assets\frame0")
+ASSETS_PATH = Path(r".\assets\frame0")
 
 global window, canvas, func_canvas, STATE, DEPARTMENT
 
 DEPARTMENT = ['ALL', 'Orthopaedic Surgery', 'Otolaryngology', 'Gastroenterology']
-
 
 # MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
 #
@@ -117,10 +116,11 @@ def create_month_grid(func_canvas, month_data, selected=0):
         fill="#000000",
         font=("ArimoRoman Bold", 20 * -1)
     )
-    button4, img = create_button(func_canvas, file_asset='button_4.png', positions=dict(x=470,y=85), command=lambda: print("right button clicked"))
-    button5, img = create_button(func_canvas, file_asset='button_5.png', positions=dict(x=368, y=85),command=lambda: print("left button clicked"))
+    button4, img = create_button(func_canvas, file_asset='right_button.png', positions=dict(x=480,y=95), command=lambda: print("right button clicked"))
+    button5, img = create_button(func_canvas, file_asset='left_button.png', positions=dict(x=380, y=95),command=lambda: print("left button clicked"))
     global YEAR_BTN
     YEAR_BTN = [(button4, img), (button5, img)]
+
 
     for idx, (k, v) in enumerate(month_data.items()):
         if k == 'Year':
