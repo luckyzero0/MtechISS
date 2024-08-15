@@ -20,6 +20,9 @@ def create_button(window, file_asset: str, positions: dict, command: Callable) -
     return img, button
 
 def start_up():
+    from controller_db import refresh_config, refresh_database
+    refresh_config()
+    refresh_database()
     window = Tk()
     window.title("ApptInsight")
     window.geometry("1186x724")

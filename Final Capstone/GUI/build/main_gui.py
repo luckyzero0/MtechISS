@@ -103,7 +103,7 @@ def create_month_grid(func_canvas, month_data, selected=0):
         81.0,
         865.0,
         551.0,
-        fill="",
+        fill="#FFFFFF",
         outline="black")
 
     YEAR_LOCATION = (413, 85)
@@ -163,7 +163,7 @@ def create_statistic(func_canvas, statistic):
         372.0,
         830.0,
         535.0,
-        fill="",
+        fill="#edfff6",
         outline="black")
     statistic_d = {}
     for idx, (k, v) in enumerate(statistic.items()):

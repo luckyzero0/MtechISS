@@ -1,20 +1,45 @@
 import tkinter
+from ast import literal_eval
 from pathlib import Path
 from typing import Callable
+
 
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
 
 from collections import namedtuple
 from main_util import start_side_button, start_up
+from controller_db import get_supply, upload_demand, upload_supply
 
-def browseFiles():
-    filename = filedialog.askopenfilename(initialdir="/",
+
+def browseFilesDemand():
+    filename = filedialog.askopenfilenames(initialdir="./",
                                           title="Select a File",
-                                          filetypes=(("Text files",
-                                                      "*.txt*"),
+
+                                          filetypes=(("Excel files",
+                                                      "*.xlsx*"),
                                                      ("all files",
                                                       "*.*")))
     input_location_demand.set(value=filename)
+def browseFilesSupply():
+    filename = filedialog.askopenfilenames(initialdir="./",
+                                          title="Select a File",
+
+                                          filetypes=(("Excel files",
+                                                      "*.xlsx*"),
+                                                     ("all files",
+                                                      "*.*")))
+    input_location_supply.set(value=filename)
+
+def start_uploading_demand():
+    print("Starting_upload_demand")
+    upload_demand(literal_eval(input_location_demand.get()))
+    print("Upload_demand Ended")
+    input_location_demand.set("")
+def start_uploading_supply():
+    print("Starting_upload_supply")
+    upload_supply(literal_eval(input_location_supply.get()))
+    print("Upload_supply Ended")
+    input_location_supply.set("")
 
 def create_add_new_gui_screen(func_canvas):
     global input_location_demand, input_location_supply
@@ -33,13 +58,13 @@ def create_add_new_gui_screen(func_canvas):
 
     button_explore = Button(func_canvas,
                             text = "Browse",
-                            command = browseFiles)
+                            command = browseFilesDemand)
 
     func_canvas.create_window((650, 50), window=button_explore, anchor='w')
 
     add_new = Button(func_canvas,
                      text = "Start Uploading",
-                     command = lambda : print(f"Add New file: {input_location_demand.get()}"))
+                     command = lambda : start_uploading_demand())
 
     func_canvas.create_window((720, 50), window=add_new, anchor='w')
     
@@ -58,13 +83,13 @@ def create_add_new_gui_screen(func_canvas):
 
     button_explore = Button(func_canvas,
                             text = "Browse",
-                            command = browseFiles)
+                            command = browseFilesSupply)
 
     func_canvas.create_window((650, 100), window=button_explore, anchor='w')
 
     add_new = Button(func_canvas,
                      text = "Start Uploading",
-                     command = lambda : print(f"Add New file: {input_location_supply.get()}"))
+                     command = lambda : start_uploading_supply())
 
     func_canvas.create_window((720, 100), window=add_new, anchor='w')
 
