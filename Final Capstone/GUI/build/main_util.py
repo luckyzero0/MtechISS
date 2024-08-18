@@ -1,3 +1,4 @@
+import logging
 from pathlib import Path
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 from typing import Callable
@@ -152,3 +153,40 @@ def start_side_button(window):
 def clear_canvas_func():
     func_canvas.delete('all')
     pass
+
+class WidgetLogger(logging.Handler):
+    def __init__(self, widget):
+        logging.Handler.__init__(self)
+        self.setLevel(logging.INFO)
+        self.widget = widget
+        self.widget.config(state='disabled')
+
+    def emit(self, record):
+        self.widget.config(state='normal')
+        # Append message (record) to the widget
+        self.widget.insert(tkinter.END, self.format(record) + '\n')
+        self.widget.see(tkinter.END)  # Scroll to the bottom
+        self.widget.config(state='disabled')
+
+class ConsoleLogger:
+    def __init__(self, text_widget):
+        self.text_widget = text_widget
+        self.text_widget.config(state=tkinter.NORMAL)
+
+    def write(self, message):
+        self.text_widget.insert(tkinter.END, message)
+        self.text_widget.see(tkinter.END)  # Scroll to the end of the text area
+
+    def flush(self):
+        pass  # No need to implement flush for this use case
+
+class TextRedirector(object):
+    def __init__(self, widget, tag="stdout"):
+        self.widget = widget
+        self.tag = tag
+
+    def write(self, string):
+        self.widget.configure(state="normal")
+        self.widget.update()
+        self.widget.insert("end", string, (self.tag,))
+        self.widget.configure(state="disabled")

@@ -1,14 +1,20 @@
+import datetime
+import logging
+import sys
 import tkinter
 from ast import literal_eval
 from pathlib import Path
 from typing import Callable
 
 
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
+from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog, scrolledtext
 
 from collections import namedtuple
-from main_util import start_side_button, start_up
-from controller_db import get_supply, upload_demand, upload_supply
+
+from dateutil.relativedelta import relativedelta
+
+from main_util import start_side_button, start_up, WidgetLogger, ConsoleLogger, TextRedirector
+from controller_db import get_supply, upload_demand, upload_supply, get_WTA, update_data, DB_FILE, refresh_database
 
 
 def browseFilesDemand():
@@ -30,17 +36,65 @@ def browseFilesSupply():
                                                       "*.*")))
     input_location_supply.set(value=filename)
 
+
+def get_next_n_months(start_month, n=3):
+    start_date = datetime.datetime.strptime(start_month, "%Y-%m")
+    months_list = [(start_date + relativedelta(months=i)).strftime("%Y-%m") for i in range(n)]
+    return months_list
+
+def get_WTA_data(category, month, department):
+
+    main_stats_month = refresh_database()
+    months = get_next_n_months(start_month=month)
+
+    filtered = main_stats_month.query(f"Months in {tuple(months)} and Department == '{department}'")
+    print(filtered)
+    if category == 'actual':
+        demand = filtered.Demand.values
+    elif category == "predicted":
+        demand = filtered.Expected.values
+    slots_booked = filtered.Slot_booked.values
+    supply = filtered.Supply
+    return demand, supply, slots_booked
+
+
+
+def refresh_WTA(new_ds, category='actual'):
+    for x in new_ds:
+        demand, supply, slots_booked = get_WTA_data(category, month=x.get('months'), department=x.get('department'))
+        if len(demand) < 3:
+            continue
+        wta = get_WTA(demand, supply, slots_booked)
+        print(f"WTA Calculated: {wta}")
+        temp = {
+            'months': x.get('months'),
+            'department': x.get('department')
+        }
+        if category == 'actual':
+            temp['actual_wta'] = wta
+        elif category == 'predict':
+            temp['predict_wta'] = wta
+        update_data(DB_FILE, temp)
+    pass
+
+
 def start_uploading_demand():
-    print("Starting_upload_demand")
-    upload_demand(literal_eval(input_location_demand.get()))
+    if input_location_demand.get():
+        print("Starting_upload_demand")
+        new_ds = upload_demand(literal_eval(input_location_demand.get()))
+    else:
+        return
     print("Upload_demand Ended")
+    print("Starting_WTA_calculation")
+    refresh_WTA(new_ds)
     input_location_demand.set("")
+    print("Completed uploaded")
 def start_uploading_supply():
     print("Starting_upload_supply")
     upload_supply(literal_eval(input_location_supply.get()))
     print("Upload_supply Ended")
     input_location_supply.set("")
-
+    print("Completed uploaded")
 def create_add_new_gui_screen(func_canvas):
     global input_location_demand, input_location_supply
     input_location_demand = tkinter.StringVar(func_canvas)
@@ -92,6 +146,14 @@ def create_add_new_gui_screen(func_canvas):
                      command = lambda : start_uploading_supply())
 
     func_canvas.create_window((720, 100), window=add_new, anchor='w')
+
+    scroll_logs = scrolledtext.ScrolledText(state='disabled')
+    scroll_logs.configure(font='TkFixedFront')
+
+    sys.stdout = TextRedirector(scroll_logs, "stdout")
+    sys.stderr = TextRedirector(scroll_logs, "stderr")
+
+    func_canvas.create_window((400,380), window=scroll_logs)
 
 
 if __name__ == "__main__":

@@ -194,7 +194,7 @@ def get_supply(input_file_path, department_interested=['GENT', 'GE1H', 'GE1S', '
     # Group by Specialty (Recoded) and sum the adjusted values
     final_df = summarised_df.groupby(['Department', 'Resource Month'])[
         ['Adjusted True Booked', 'Adjusted True Supply']].sum().round().reset_index()
-    final_df.rename(columns={'Adjusted True Supply': 'supply', 'Resource Month': 'months', 'Department': 'department'},
+    final_df.rename(columns={'Adjusted True Supply': 'supply', 'Resource Month': 'months', 'Department': 'department','Adjusted True Booked':'slot_booked'},
                     inplace=True)
     print(final_df)
     return final_df
@@ -228,7 +228,7 @@ def get_demand(input_file_paths):
         for (year, month, department), temp in df_filtered.groupby(
                 ['Appointment Created Year', 'Appointment Created Month', 'Department']):
             temp_WTA = filter_for_WTA(temp)
-            m = str(year) + "-" + str(month).zfill(2)
+            m = str(int(year)) + "-" + str(int(month)).zfill(2)
             cnt = len(temp)
             master_list.append({
                 'months': m,
@@ -253,8 +253,9 @@ def is_keys_exist(excel_file, month, department):
         if ws.cell(1, x).value.lower() == 'department':
             department_idx = x
     while True:
-        if ws.cell(idx, month_idx).value == month:
-            if ws.cell(idx, department_idx).value == department:
+        if str(ws.cell(idx, month_idx).value) == str(month):
+            if str(ws.cell(idx, department_idx).value) == str(department):
+                print(f"{month}-{department} found at row {idx}")
                 wb.close()
                 return idx
         if ws.cell(idx, 1).value == None:
@@ -269,6 +270,7 @@ def update_data(excel_file, new_data: dict):
         append(excel_file, [[new_data.get('months'), new_data.get('department')]])
         idx = is_keys_exist(excel_file, new_data.get('months'), new_data.get('department'))
     update(excel_file, new_data, idx)
+    return new_data
 
 
 def update(excel_file, new_data, col_idx):
@@ -276,7 +278,7 @@ def update(excel_file, new_data, col_idx):
     ws = wb.active
     # Get Index of New Data
     key_idx = {}
-    for x in range(1, 100):
+    for x in range(1, 10000):
         if ws.cell(1, x).value == None:
             break
         for k in new_data.keys():
@@ -300,31 +302,38 @@ def append(excel_file, new_data):
 
 
 def upload_demand(TEST_DATA):
+    if len(TEST_DATA) == 0:
+        return {}
     new_d = get_demand(TEST_DATA)
     new_ds = new_d.to_dict(orient='records')
     for d in new_ds:
         update_data(DB_FILE, d)
-
+    return new_ds
 
 def upload_supply(TEST_DATA):
+    if len(TEST_DATA) == 0:
+        return {}
+
+    output = []
     for file in TEST_DATA:
         new_d = get_supply(file)[['months', 'department', 'supply']]
         new_ds = new_d.to_dict(orient='records')
         for d in new_ds:
             update_data(DB_FILE, d)
         print(f"Uploaded {file}")
-
+        output.extend(new_ds)
+    return new_ds
 
 
 # Function to calc WTA for a given month
-def calc_WTA(demand: int, supply: int, slots_booked: int, carry_over: int) -> float:
+def _calc_WTA(demand: int, supply: int, slots_booked: int, carry_over: int) -> float:
     slots_avail = supply - slots_booked
     if carry_over <= slots_avail:
         return 0.0
     else:
-        WTA = (carry_over - slots_avail) / demand
+        WTA = (carry_over - slots_avail) / demand * 100
         if WTA > 1:
-            return 1.0
+            return 100.0
         else:
             return WTA
 
@@ -365,7 +374,7 @@ def calc_WTA(df, first=True):
     """
     WTA_list = []
     for i in range(len(df) - 1):
-        WTA = calc_WTA(df.demand[i], df.supply[i + 1], df.slots_booked[i + 1], df.carry_over[i + 1])
+        WTA = _calc_WTA(df.demand[i], df.supply[i + 1], df.slots_booked[i + 1], df.carry_over[i + 1])
         WTA_list.append(WTA)
     if first:
         return WTA_list[0]
@@ -374,13 +383,10 @@ def calc_WTA(df, first=True):
 
 def get_WTA(demand, supply, slots_booked):
     df = pd.DataFrame([demand, supply, slots_booked], columns=['demand','supply','slots_booked'])
-    modify_df()
+    df = modify_df(df)
+    print(df[['demand','supply','slots_booked','carry_over']])
     return calc_WTA(df)
 
 if __name__ == "__main__":
     refresh_config()
-
-    data = [[1000, 900, 800], [1000, 950, 300], [0, 1000, 200], [0, 950, 50]]
-    df = pd.DataFrame(data, columns=['demand', 'supply', 'slots_booked'])
-    modify_df(df)
-    print(get_WTA(df))
+    print(get_WTA([1000, 900, 800], [1000, 950, 300], [0, 1000, 200]))
