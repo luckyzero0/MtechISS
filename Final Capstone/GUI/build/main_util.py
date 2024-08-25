@@ -6,19 +6,32 @@ import tkinter
 
 OUTPUT_PATH = Path(__file__).parent
 ASSETS_PATH = Path(r".\assets\img")
+
+SECONDARY_COLOR = "#030C5D"
+BACKGROUND_COLOR = "#edfff6"
+BTN_COLOR = '#007d3e'
+
+DEPARTMENT = ['Orthopaedic Surgery', 'Otolaryngology', 'Gastroenterology']
+
+DEFAULT_LABEL_FONT = dict(fg="black",
+                          font=("Arial", 9, 'bold'),
+                          bg=BACKGROUND_COLOR)
+
+
 def relative_to_assets(path: str):
     return str(Path(ASSETS_PATH, path))
 
-def create_button(window, file_asset: str, positions: dict, command: Callable) -> tkinter.Button:
 
+def create_button(window, file_asset: str, positions: dict, command: Callable) -> tkinter.Button:
     img = PhotoImage(file=relative_to_assets(file_asset))
 
-    button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat', fg='green')
+    button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat', fg='green', bg='white')
     try:
         window.create_window((positions['x'], positions['y']), window=button)
     except AttributeError:
         button.place(**positions)
     return img, button
+
 
 def start_up():
     from controller_db import refresh_config, refresh_database
@@ -43,7 +56,7 @@ def start_up():
     canvas.place(x=0, y=0)
     func_canvas = Canvas(
         window,
-        bg = '#edfff6',
+        bg=BACKGROUND_COLOR,
         height=724,
         width=1186,
         bd=0,
@@ -54,7 +67,8 @@ def start_up():
 
     appImage = PhotoImage(
         file=relative_to_assets("image_1.png"))
-    mainapp_btn = Button(window, image=appImage, borderwidth=0, highlightthickness=0,bg="#ffffff", fg="#ffffff", command=lambda: nav_main_gui(), relief='flat')
+    mainapp_btn = Button(window, image=appImage, borderwidth=0, highlightthickness=0, bg="#ffffff", fg="#ffffff",
+                         command=lambda: nav_main_gui(), relief='flat')
     mainapp_btn.place(x=20.0, y=20.0)
     # appimage_logo = canvas.create_image(
     #     49.0,
@@ -67,7 +81,7 @@ def start_up():
         88.0,
         1186.0,
         98,
-        fill="#009C54",
+        fill=BTN_COLOR,
         outline="")
 
     canvas.create_text(
@@ -84,8 +98,9 @@ def start_up():
         92,
         300,
         724,
-        fill="#009C54",
+        fill=BTN_COLOR,
         outline="")
+
     def get_pos(*args):
         print(args)
 
@@ -101,23 +116,26 @@ def start_up():
         font=("OpenSansItalic Regular", 9 * -1)
     )
 
+
 def nav_add_new():
     clear_canvas_func()
     from add_new_gui import create_add_new_gui_screen
     create_add_new_gui_screen(func_canvas)
+
 
 def nav_model_management():
     clear_canvas_func()
     from model_management_gui import create_model_management_screen
     create_model_management_screen(func_canvas)
 
+
 def nav_main_gui():
     clear_canvas_func()
     from main_gui import create_main_screen
     create_main_screen(func_canvas, startup=True)
 
-def start_side_button(window):
 
+def start_side_button(window):
     SIDE_TOOL_CONFIG = {
         'add_new_button': {
             'file_asset': 'add_new_button.png',
@@ -154,6 +172,7 @@ def clear_canvas_func():
     func_canvas.delete('all')
     pass
 
+
 class WidgetLogger(logging.Handler):
     def __init__(self, widget):
         logging.Handler.__init__(self)
@@ -168,6 +187,7 @@ class WidgetLogger(logging.Handler):
         self.widget.see(tkinter.END)  # Scroll to the bottom
         self.widget.config(state='disabled')
 
+
 class ConsoleLogger:
     def __init__(self, text_widget):
         self.text_widget = text_widget
@@ -179,6 +199,7 @@ class ConsoleLogger:
 
     def flush(self):
         pass  # No need to implement flush for this use case
+
 
 class TextRedirector(object):
     def __init__(self, widget, tag="stdout"):

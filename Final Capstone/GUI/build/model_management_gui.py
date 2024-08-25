@@ -5,7 +5,8 @@ from typing import Callable
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
 
 from collections import namedtuple
-from main_util import start_side_button, start_up
+from main_util import start_side_button, start_up, DEFAULT_LABEL_FONT
+
 
 def browseFiles():
     filename = filedialog.askopenfilename(initialdir="/",
@@ -22,7 +23,7 @@ def create_model_management_screen(func_canvas):
 
     label_box = tkinter.Label(func_canvas,
                       text = "Current Model",
-                      fg = "black")
+                      **DEFAULT_LABEL_FONT)
 
     func_canvas.create_window((1, 55), window=label_box, anchor='w')
 
@@ -60,29 +61,29 @@ def create_model_management_screen(func_canvas):
 
     label_box = tkinter.Label(func_canvas,
                       text = "Output Model Path",
-                      fg = "black")
+                      **DEFAULT_LABEL_FONT)
 
-    func_canvas.create_window((1, 220), window=label_box, anchor='w')
+    func_canvas.create_window((145, 225), window=label_box, anchor='e')
 
 
     text_box = Entry(func_canvas, textvariable=output_location_model,  width=80)
     text_box.config(state='disabled')
 
-    func_canvas.create_window((150, 220), height=30, window=text_box, anchor='w')
+    func_canvas.create_window((150, 225), height=30, window=text_box, anchor='w')
 
 
     button_explore = Button(func_canvas,
                             text = "Browse Files",
                             command = browseFiles)
 
-    func_canvas.create_window((680, 220), window=button_explore, anchor='w')
+    func_canvas.create_window((680, 225), window=button_explore, anchor='w')
 
 
     label_box = tkinter.Label(func_canvas,
                       text = "Output Model Settings",
-                      fg = "black")
+                      **DEFAULT_LABEL_FONT)
 
-    func_canvas.create_window((1, 280), window=label_box, anchor='w')
+    func_canvas.create_window((145, 280), window=label_box, anchor='e')
 
     text_box = Entry(func_canvas, textvariable=output_model_settings,  width=80)
     text_box.config(state='disabled')
@@ -110,5 +111,5 @@ if __name__ == "__main__":
     global window, canvas, func_canvas
     window, canvas, func_canvas, info = start_up()
     side_buttons = start_side_button(window)
-    create_model_management_screen()
+    create_model_management_screen(func_canvas)
     window.mainloop()

@@ -1,7 +1,12 @@
+import datetime
+
 import pandas as pd
 from collections import defaultdict, namedtuple
 
+from dateutil.relativedelta import relativedelta
 from openpyxl.reader.excel import load_workbook
+
+from controller_model import default_model
 
 DB_FILE = "./assets/DB/DB File.xlsx"
 DB_CONFIG = './assets/DB/Department Short Codes.xlsx'
@@ -37,6 +42,19 @@ def month2idx(months="Jul"):
     MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return MONTHS.index(months) + 1
 
+def get_training_months(predicted_year, predicted_month, department):
+    TRAINING_WINDOW = 24
+    TESTING_WINDOW = 3
+    predict_year_month = datetime.date(day=1, month=predicted_month, year=predicted_year)
+    start_date_train = predict_year_month - relativedelta(months=TRAINING_WINDOW+TESTING_WINDOW+1)
+    end_date_train = predict_year_month - relativedelta(months=1)
+    filtered_df = main_stats_month[main_stats_month.Department == department]
+    train_date_list = [x.strftime("%Y-%m") for x in pd.date_range(start_date_train, end_date_train)]
+    train_df = filtered_df[filtered_df["Months"].isin(train_date_list)].sort_values('Months')
+    return train_df
+
+
+
 
 def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     def get_threshold(department):
@@ -63,6 +81,7 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
         output = filtered.query(f"Months == '{year}-{str(i).zfill(2)}'")
         if len(output) == 0:
             percentage = 0
+            color = 'black'
         else:
             percentage = output.iloc[0]['Actual_WTA']
             color = get_colour(percentage)
@@ -90,7 +109,7 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
                       f'{MONTHS[month - 1]} Demand': f'{filtered_months.Demand}',
                       f'{MONTHS[month - 1]} Supply': f'{filtered_months.Supply}',
                       f'{MONTHS[month - 1]} Predicted WTA': f'{filtered_months.Predicted_WTA}%',
-                      f'{MONTHS[month - 1]} Total Expected': f'{filtered_months.Expected}',
+                      f'{MONTHS[month - 1]} Total Expected': f'{filtered_months.Predicted_Demand}',
                       f'{MONTHS[month - 1]} Supply Adjustment': '130'
                       }
 
@@ -234,7 +253,8 @@ def get_demand(input_file_paths):
                 'months': m,
                 'department': department,
                 'demand': cnt,
-                'actual_wta_demand': len(temp_WTA)
+                'actual_wta_demand': len(temp_WTA),
+                'actual_wta': len(temp_WTA[temp_WTA['Appointment Waiting Time (days)'] <= 60])/len(temp_WTA)
             })
     return pd.DataFrame(master_list)
 
@@ -253,8 +273,8 @@ def is_keys_exist(excel_file, month, department):
         if ws.cell(1, x).value.lower() == 'department':
             department_idx = x
     while True:
-        if str(ws.cell(idx, month_idx).value) == str(month):
-            if str(ws.cell(idx, department_idx).value) == str(department):
+        if str(ws.cell(idx, month_idx).value).lower() == str(month).lower():
+            if str(ws.cell(idx, department_idx).value).lower() == str(department).lower():
                 print(f"{month}-{department} found at row {idx}")
                 wb.close()
                 return idx
@@ -282,7 +302,7 @@ def update(excel_file, new_data, col_idx):
         if ws.cell(1, x).value == None:
             break
         for k in new_data.keys():
-            if ws.cell(1, x).value.lower() == k:
+            if ws.cell(1, x).value.lower() == k.lower():
                 key_idx[k] = x
     for k, v in new_data.items():
         ws.cell(col_idx, key_idx[k]).value = v
@@ -387,6 +407,40 @@ def get_WTA(demand, supply, slots_booked):
     print(df[['demand','supply','slots_booked','carry_over']])
     return calc_WTA(df)
 
+def predict_upload(ds):
+    for d in ds:
+        date = pd.to_datetime(f"{d.get('months')}-01") + relativedelta(months=1)
+        _predict_upload(predicted_year=date.year, predicted_month=date.month, department=d.get('department'))
+def _predict_upload(predicted_year=2024, predicted_month=1, department='ENT'):
+    data = get_training_months(predicted_year=predicted_year, predicted_month=predicted_month, department=department)
+    PREDICT_LEN = 3
+    MINIMUM_TRAIN = 24
+    if len(data) <= MINIMUM_TRAIN - PREDICT_LEN:
+        return []
+    wta_predicted, rmse = default_model(data, predict_len=PREDICT_LEN)
+    print(f"Model: RMSE: {rmse}")
+    if len(wta_predicted == PREDICT_LEN):
+        timeseries = pd.date_range(start=f"{predicted_year}-{predicted_month}-1", periods=PREDICT_LEN, freq='MS')
+        output = []
+        for idx,ts in enumerate(timeseries):
+            output.append({
+                'months':ts.strftime("%Y-%m"),
+                'Predicted_Demand':int(wta_predicted[idx]),
+                'department':department
+            })
+        for d in output:
+            update_data(DB_FILE, d)
+        return output
+    else: return []
+
+def predict_all(time_start, time_end, departments=['ENT','GAS','OTO']):
+    for dept in departments:
+        for date in pd.date_range(start=time_start, end=time_end, freq='MS'):
+            print(date, dept)
+            print(_predict_upload(date.year, date.month, dept))
+
+
 if __name__ == "__main__":
+    refresh_database()
     refresh_config()
-    print(get_WTA([1000, 900, 800], [1000, 950, 300], [0, 1000, 200]))
+    predict_all(time_start='2022-02-01',time_end='2024-12-01')

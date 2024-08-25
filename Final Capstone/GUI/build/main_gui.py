@@ -4,14 +4,9 @@ from datetime import datetime
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 from main_util import *
 from collections import namedtuple
-from controller_db import month2idx, code_to_long_department
-
-OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = Path(r".\assets\frame0")
+from controller_db import month2idx, code_to_long_department, long_department_to_code
 
 global window, canvas, func_canvas, STATE, DEPARTMENT
-
-DEPARTMENT = ['ALL', 'Orthopaedic Surgery', 'Otolaryngology', 'Gastroenterology']
 
 # MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
 #
@@ -128,7 +123,7 @@ def create_month_grid(func_canvas, month_data, selected=0):
         else:
             if idx == selected:
 
-                outline = '#007d3e'
+                outline = BTN_COLOR
                 width = '3'
             else:
                 outline = '#000000'
@@ -163,18 +158,18 @@ def create_statistic(func_canvas, statistic):
         372.0,
         830.0,
         535.0,
-        fill="#edfff6",
+        fill=BACKGROUND_COLOR,
         outline="black")
     statistic_d = {}
     for idx, (k, v) in enumerate(statistic.items()):
         key_var = tkinter.StringVar(func_canvas, value=k + ":")
 
-        t_box = tkinter.Label(master=func_canvas, textvariable=key_var, bg='#edfff6',
+        t_box = tkinter.Label(master=func_canvas, textvariable=key_var, bg=BACKGROUND_COLOR,
                               font=("ArimoRoman Bold", 20 * -1,), justify='right')
         func_canvas.create_window((CUR_POS[0], CUR_POS[1]), window=t_box)
 
         v_var = tkinter.StringVar(func_canvas, value=v)
-        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg="#edfff6", font=("ArimoRoman Bold", 20 * -1),
+        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg=BACKGROUND_COLOR, font=("ArimoRoman Bold", 20 * -1),
                               justify='left', )
 
         func_canvas.create_window((CUR_POS[0] + SPACE, CUR_POS[1]), window=v_box)
@@ -195,7 +190,7 @@ def create_main_screen(func_canvas, startup=False):
     if startup == True:
         STATE = dict(year=datetime.now().year,
                      month=datetime.now().month,
-                     department='ALL'
+                     department=long_department_to_code(DEPARTMENT[0])
                      )
     selected_year = STATE.get('year')
     selected_month = STATE.get('month')
@@ -204,13 +199,13 @@ def create_main_screen(func_canvas, startup=False):
     REC = [30, 20, 865, 65]
     func_canvas.create_rectangle(
         *REC,
-        fill="#030C5D",
+        fill=SECONDARY_COLOR,
         outline="black")
     cur_select_department = tkinter.StringVar()
     selected_department_long = code_to_long_department(selected_department)
     cur_select_department.set(selected_department_long)
     dropdown = tkinter.OptionMenu(func_canvas, cur_select_department, *DEPARTMENT, command=get_department)
-    dropdown.configure(bg="#030C5D", fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0,
+    dropdown.configure(bg=("%s" % SECONDARY_COLOR), fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0,
                        highlightthickness=0)
     func_canvas.create_window((450, 40), window=dropdown)
     create_month_grid(func_canvas, MONTH_DATA, selected=selected_month)
