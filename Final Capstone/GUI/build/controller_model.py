@@ -4,7 +4,6 @@ import numpy as np
 
 from prophet import Prophet
 
-
 def import_model():
     pass
 

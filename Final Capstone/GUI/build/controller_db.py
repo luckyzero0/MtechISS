@@ -77,6 +77,7 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
     MONTH_DATA = {'Year': str(year)}
     MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+    color='black'
     for i in range(1, 13):
         output = filtered.query(f"Months == '{year}-{str(i).zfill(2)}'")
         if len(output) == 0:
@@ -88,6 +89,7 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
             if pd.isna(percentage):
                 color = get_colour(output.iloc[0]['Predicted_WTA'])
                 percentage = f"({output.iloc[0]['Predicted_WTA']})"
+
 
         # color = get_colour(percentage)
         MONTH_DATA[MONTHS[i - 1]] = MonthData(MONTHS[i - 1], f'{percentage}%', color)

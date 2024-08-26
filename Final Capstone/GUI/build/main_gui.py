@@ -8,6 +8,8 @@ from controller_db import month2idx, code_to_long_department, long_department_to
 
 global window, canvas, func_canvas, STATE, DEPARTMENT
 
+DB_FILE = "./assets/DB/DB File.xlsx"
+DB_CONFIG = './assets/DB/Department Short Codes.xlsx'
 # MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
 #
 # MONTH_DATA = {

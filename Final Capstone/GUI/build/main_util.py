@@ -142,17 +142,17 @@ def start_side_button(window):
             'positions': dict(x=15.0, y=110.0),
             'command': lambda: nav_add_new()
         },
-        'edit_button': {
-            'file_asset': 'edit_existing_button.png',
-            'positions': dict(x=15.0, y=190.0),
-            'command': lambda: print("Edit Existing Clicked")
-        },
+        # 'edit_button': {
+        #     'file_asset': 'edit_existing_button.png',
+        #     'positions': dict(x=15.0, y=190.0),
+        #     'command': lambda: print("Edit Existing Clicked")
+        # },
 
-        'model_button': {
-            'file_asset': 'model_management_button.png',
-            'positions': dict(x=15.0, y=500.0, width=275.0),
-            'command': lambda: nav_model_management()
-        },
+        # 'model_button': {
+        #     'file_asset': 'model_management_button.png',
+        #     'positions': dict(x=15.0, y=500.0, width=275.0),
+        #     'command': lambda: nav_model_management()
+        # },
 
         'config_button': {
             'file_asset': 'configuration_button.png',

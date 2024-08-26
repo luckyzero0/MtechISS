@@ -158,13 +158,13 @@ def create_add_new_gui_screen(func_canvas):
 
     func_canvas.create_window((720, 100), window=add_new, anchor='w')
 
-    scroll_logs = scrolledtext.ScrolledText(state='disabled')
+    scroll_logs = scrolledtext.ScrolledText(state='disabled', height=20, width=70)
     scroll_logs.configure(font='TkFixedFront')
 
     sys.stdout = TextRedirector(scroll_logs, "stdout")
     sys.stderr = TextRedirector(scroll_logs, "stderr")
 
-    func_canvas.create_window((400, 380), window=scroll_logs)
+    func_canvas.create_window((45, 150), window=scroll_logs, anchor='nw')
 
 
 if __name__ == "__main__":
