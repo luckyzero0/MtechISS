@@ -4,12 +4,18 @@ from datetime import datetime
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
 from main_util import *
 from collections import namedtuple
-from controller_db import month2idx, code_to_long_department, long_department_to_code
+from controller_db import month2idx, code_to_long_department, long_department_to_code, predict_upload, create_month_year
+from add_new_gui import refresh_WTA
 
 global window, canvas, func_canvas, STATE, DEPARTMENT
 
 DB_FILE = "./assets/DB/DB File.xlsx"
 DB_CONFIG = './assets/DB/Department Short Codes.xlsx'
+
+
+# DB_CONFIG = globals().get('DB_CONFIG')
+# DB_FILE = globals().get('DB_FILE')
+
 # MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
 #
 # MONTH_DATA = {
@@ -37,21 +43,47 @@ DB_CONFIG = './assets/DB/Department Short Codes.xlsx'
 #               f'{state["month_selected"]} Supply Adjustment': '130'
 #               }
 
-def get_all_data(*args):
-    print(f"Get All Data")
+def get_month_data(*args):
+    """
+    To Get the clicked month Data
 
-
-def get_month_data_temp(*args):
+    :param args:
+    :return: None
+    """
     selected_month = func_canvas.gettags('current')[0].replace("_btm", "")
     selected_month_idx = month2idx(selected_month)
+    STATE['month'] = selected_month_idx
+    clear_canvas_func()
+    create_main_screen(func_canvas, startup=False)
+
+
+def refresh_wta_month(*args):
+    """
+    To Refresh the selected Month for the predicted and actual WTA calculation
+
+    :param args:
+    :return:
+    """
+    selected_month = func_canvas.gettags('current')[0].replace("_btm", "")
+    selected_month_idx = month2idx(selected_month)
+    selected_department = STATE['department']
+    selected_year = STATE['year']
+    combined_year_month = create_month_year(selected_year, selected_month_idx)
+    refresh_WTA([{'months': combined_year_month, "department": selected_department}], category='actual')
+    refresh_WTA([{'months': combined_year_month, "department": selected_department}], category='predicted')
     STATE['month'] = selected_month_idx
 
     clear_canvas_func()
     create_main_screen(func_canvas, startup=False)
-    # print(f"Get Month Data {func_canvas.gettags('current')[0]}")
 
 
-def get_department(value):
+def get_department(value: str):
+    """
+    To get the department selected from the drop down
+
+    :param value: drop down value
+    :return: None
+    """
     from controller_db import long_department_to_code
     short_code_department = long_department_to_code(value)
     STATE['department'] = short_code_department
@@ -65,27 +97,51 @@ def get_department(value):
 
 def create_month(x, y, month_txt, per_txt, rec_colour, SIZE_OF_WIDGET=(120, 110), outline='#000000', outline_width=1):
     """
+    To get the month selected
+
     :param x: Left top position of X
     :param y: Left top position of Y
-    :return: Frame
+    :return: None
     """
 
     main_rec = func_canvas.create_rectangle(x, y, x + SIZE_OF_WIDGET[0], y + SIZE_OF_WIDGET[1], fill='#FFFFFF',
                                             width=outline_width, outline=outline, tags=f'{month_txt}_btm')
-    func_canvas.tag_bind(f'{month_txt}_btm', "<Button-1>", get_month_data_temp)
+
+    func_canvas.tag_bind(f'{month_txt}_btm', "<Button-1>", get_month_data)
+    func_canvas.tag_bind(f'{month_txt}_btm', "<Button-3>", refresh_wta_month)
 
     CENTER_X_OF_WIDGET = (x + SIZE_OF_WIDGET[0] / 2)
     func_canvas.create_text(CENTER_X_OF_WIDGET, y + 17, anchor="center", text=month_txt, fill="#000000",
                             font=("ArimoRoman Bold", 20 * -1))
     PAD = 20
     func_canvas.create_rectangle(x + PAD, y + 40, x + SIZE_OF_WIDGET[0] - PAD, y + 40 + 20, fill=rec_colour,
-                                 outline='black')
+                                 outline='black', tags=f'{month_txt}_btm')
+    func_canvas.tag_bind(f'{month_txt}_btm', "<Button-1>", get_month_data)
+    func_canvas.tag_bind(f'{month_txt}_btm', "<Button-3>", refresh_wta_month)
+
     func_canvas.create_text(CENTER_X_OF_WIDGET, y + 40 + 20 + 17, anchor='center', text=per_txt, fill='#000000',
                             font=("ArimoRoman Bold", 20 * -1))
 
+def nav_year(func):
+    if func=='increase':
+        STATE['year'] = STATE['year'] + 1
+    elif func=='decrease':
+        STATE['year'] = STATE['year'] - 1
+    clear_canvas_func()
+    create_main_screen(func_canvas, startup=False)
 
 # Rectangle for dropdown
 def create_month_grid(func_canvas, month_data, selected=0):
+    """
+    To create a grid of the months in the GUI
+
+    Parameters:
+    :param func_canvas: Tkinter window (Main)
+    :param month_data: Months data to be populated by functions
+    :param selected: selected Months
+
+    :return:
+    """
     # START_GRID = (360, 220)
     START_GRID = (60, 120)
 
@@ -113,11 +169,14 @@ def create_month_grid(func_canvas, month_data, selected=0):
         fill="#000000",
         font=("ArimoRoman Bold", 20 * -1)
     )
-    button4, img = create_button(func_canvas, file_asset='right_button.png', positions=dict(x=480,y=95), command=lambda: print("right button clicked"))
-    button5, img = create_button(func_canvas, file_asset='left_button.png', positions=dict(x=380, y=95),command=lambda: print("left button clicked"))
+    button4, img = create_button(func_canvas, file_asset='right_button.png', positions=dict(x=480, y=95),
+                                 command=lambda: nav_year('increase'))
+    button5, img = create_button(func_canvas, file_asset='left_button.png', positions=dict(x=380, y=95),
+                                 command=lambda: nav_year('decrease'))
     global YEAR_BTN
     YEAR_BTN = [(button4, img), (button5, img)]
 
+    # button6, img = create_button(func_canvas, file_asset='')
 
     for idx, (k, v) in enumerate(month_data.items()):
         if k == 'Year':
@@ -139,6 +198,13 @@ def create_month_grid(func_canvas, month_data, selected=0):
 
 
 def create_statistic(func_canvas, statistic):
+    """
+    Create the statistic
+
+    :param func_canvas: Tkinter window
+    :param statistic:
+    :return:
+    """
     TITLE = (382, 380)
     func_canvas.create_text(
         *TITLE,
@@ -160,7 +226,7 @@ def create_statistic(func_canvas, statistic):
         372.0,
         830.0,
         535.0,
-        fill=BACKGROUND_COLOR,
+        fill="#FFFFFF",
         outline="black")
     statistic_d = {}
     for idx, (k, v) in enumerate(statistic.items()):
@@ -171,7 +237,8 @@ def create_statistic(func_canvas, statistic):
         func_canvas.create_window((CUR_POS[0], CUR_POS[1]), window=t_box)
 
         v_var = tkinter.StringVar(func_canvas, value=v)
-        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg=BACKGROUND_COLOR, font=("ArimoRoman Bold", 20 * -1),
+        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg=BACKGROUND_COLOR,
+                              font=("ArimoRoman Bold", 20 * -1),
                               justify='left', )
 
         func_canvas.create_window((CUR_POS[0] + SPACE, CUR_POS[1]), window=v_box)
@@ -184,11 +251,19 @@ def create_statistic(func_canvas, statistic):
 
 
 def create_main_screen(func_canvas, startup=False):
+    """
+
+    Parameters:
+    :param func_canvas: Tkinter Window
+    :param startup: Startup
+    :return:
+    """
     global statistics, MONTH_DATA, statistics_d, STATE
 
-    from controller_db import get_all_months_data, refresh_database, refresh_config
+    from controller_db import get_all_months_data, refresh_database, refresh_department_config, refresh_configuration
+    refresh_configuration()
     refresh_database()
-    refresh_config()
+    refresh_department_config()
     if startup == True:
         STATE = dict(year=datetime.now().year,
                      month=datetime.now().month,

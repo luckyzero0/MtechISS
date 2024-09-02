@@ -8,9 +8,19 @@ from openpyxl.reader.excel import load_workbook
 
 from controller_model import default_model
 
-DB_FILE = "./assets/DB/DB File.xlsx"
-DB_CONFIG = './assets/DB/Department Short Codes.xlsx'
+CONFIGURATION = defaultdict(lambda x: "")
 
+CONFIGURATION_EXCEL = './assets/DB/Configuration.xlsx'
+DB_CONFIG = CONFIGURATION.get('DB_CONFIG')
+DB_FILE = CONFIGURATION.get('DB_FILE')
+
+def refresh_configuration():
+    global CONFIGURATION
+
+    configuration_df = pd.read_excel(CONFIGURATION_EXCEL)
+    CONFIGURATION = zip(configuration_df['Config Key'], configuration_df['Config Value'])
+    globals().update(CONFIGURATION)
+    return CONFIGURATION
 
 def refresh_database():
     global main_stats_month
@@ -18,7 +28,7 @@ def refresh_database():
     return main_stats_month
 
 
-def refresh_config():
+def refresh_department_config():
     global department_config
     department_config = pd.read_excel(DB_CONFIG, sheet_name='Department_config')
     return department_config
@@ -45,6 +55,7 @@ def month2idx(months="Jul"):
 def get_training_months(predicted_year, predicted_month, department):
     TRAINING_WINDOW = 24
     TESTING_WINDOW = 3
+    refresh_database()
     predict_year_month = datetime.date(day=1, month=predicted_month, year=predicted_year)
     start_date_train = predict_year_month - relativedelta(months=TRAINING_WINDOW+TESTING_WINDOW+1)
     end_date_train = predict_year_month - relativedelta(months=1)
@@ -55,7 +66,8 @@ def get_training_months(predicted_year, predicted_month, department):
 
 
 
-
+def create_month_year(year, month):
+    return f"{int(year)}-{str(int(month)).zfill(2)}"
 def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     def get_threshold(department):
         return eval(department_config[department_config['Department Short Code'] == department].Threshold.iloc[0])
@@ -79,44 +91,66 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     color='black'
     for i in range(1, 13):
-        output = filtered.query(f"Months == '{year}-{str(i).zfill(2)}'")
+        output = filtered.query(f"Months == '{create_month_year(year, i)}'")
         if len(output) == 0:
-            percentage = 0
+
+            percentage_str = "Not Avaliable"
             color = 'black'
         else:
-            percentage = output.iloc[0]['Actual_WTA']
-            color = get_colour(percentage)
-            if pd.isna(percentage):
-                color = get_colour(output.iloc[0]['Predicted_WTA'])
-                percentage = f"({output.iloc[0]['Predicted_WTA']})"
+            if output.fillna(0).iloc[0]['Demand'] != 0:
+                percentage = output.iloc[0]['Actual_WTA']
+                color = get_colour(percentage)
+                percentage_str = f"{percentage:.1f}%"
+            elif pd.isna(output.iloc[0]['Predicted_WTA']) == False:
+                percentage = output.iloc[0]['Predicted_WTA']
+                color = get_colour(percentage)
+                percentage_str = f"({percentage:.1f}%)"
+            else:
+                percentage_str = "Not Avaliable"
+                color = 'Black'
 
 
-        # color = get_colour(percentage)
-        MONTH_DATA[MONTHS[i - 1]] = MonthData(MONTHS[i - 1], f'{percentage}%', color)
+        #
+        MONTH_DATA[MONTHS[i - 1]] = MonthData(MONTHS[i - 1], percentage_str, color)
 
     filtered_months = department_data[department_data.Months == f"{str(int(year))}-{str(int(month)).zfill(2)}"]
     if len(filtered_months) == 0:
-        statistics = {f'{MONTHS[month]} WTA': '-',
-                      f'{MONTHS[month]} Demand': '-',
-                      f'{MONTHS[month]} Supply': '-',
-                      f'{MONTHS[month]} Predicted WTA': '-',
-                      f'{MONTHS[month]} Total Expected': '-',
-                      f'{MONTHS[month]} Supply Adjustment': '-'
+        statistics = {f'{MONTHS[month - 1]} WTA': '-',
+                      f'{MONTHS[month - 1]} Demand': '-',
+                      f'{MONTHS[month - 1]} Supply': '-',
+                      f'{MONTHS[month - 1]} Predicted WTA': '-',
+                      f'{MONTHS[month - 1]} Total Expected': '-',
+                      f'{MONTHS[month - 1]} Total Booked': '-',
                       }
 
     else:
         filtered_months = filtered_months.iloc[0].fillna(0)
 
-        statistics = {f'{MONTHS[month - 1]} WTA': f'{filtered_months.Actual_WTA}%',
-                      f'{MONTHS[month - 1]} Demand': f'{filtered_months.Demand}',
-                      f'{MONTHS[month - 1]} Supply': f'{filtered_months.Supply}',
-                      f'{MONTHS[month - 1]} Predicted WTA': f'{filtered_months.Predicted_WTA}%',
-                      f'{MONTHS[month - 1]} Total Expected': f'{filtered_months.Predicted_Demand}',
-                      f'{MONTHS[month - 1]} Supply Adjustment': '130'
+        statistics = {f'{MONTHS[month - 1]} WTA': f'{filtered_months.Actual_WTA:.2f}%',
+                      f'{MONTHS[month - 1]} Demand': f'{filtered_months.Demand:.0f}',
+                      f'{MONTHS[month - 1]} Supply': f'{filtered_months.Supply:.0f}',
+                      f'{MONTHS[month - 1]} Predicted WTA': f'{filtered_months.Predicted_WTA:.2f}%',
+                      f'{MONTHS[month - 1]} Total Expected': f'{filtered_months.Predicted_Demand:.0f}',
+                      f'{MONTHS[month - 1]} Total Booked': f'{filtered_months.Slot_booked:.0f}',
                       }
 
     return MONTH_DATA, statistics
+def append_config_df(df):
+    from openpyxl.reader.excel import load_workbook
+    wb = load_workbook(CONFIGURATION_EXCEL)
+    ws = wb.active
+    temp = 2
+    for idx,r in df.iterrows():
+        ws.cell(temp, 1).value = r['Config Key']
+        ws.cell(temp, 2).value = r['Config Value']
+        temp += 1
+        print(f"Added into {r['Config Key']}, {r['Config Value']}")
+    wb.save(CONFIGURATION_EXCEL)
+    wb.close()
 
+def append_config():
+    append_config_df(pd.DataFrame(CONFIGURATION))
+    print("Completed Appending")
 
 def regroup_specialty(dept):
     def get_mapper():
@@ -249,7 +283,7 @@ def get_demand(input_file_paths):
         for (year, month, department), temp in df_filtered.groupby(
                 ['Appointment Created Year', 'Appointment Created Month', 'Department']):
             temp_WTA = filter_for_WTA(temp)
-            m = str(int(year)) + "-" + str(int(month)).zfill(2)
+            m = create_month_year(year, month)
             cnt = len(temp)
             master_list.append({
                 'months': m,
@@ -308,7 +342,7 @@ def update(excel_file, new_data, col_idx):
                 key_idx[k] = x
     for k, v in new_data.items():
         ws.cell(col_idx, key_idx[k]).value = v
-    print("Updated")
+        print(f"Updated at {col_idx, key_idx[k]} {k} with {v}")
     wb.save(excel_file)
     wb.close()
 
@@ -332,13 +366,13 @@ def upload_demand(TEST_DATA):
         update_data(DB_FILE, d)
     return new_ds
 
-def upload_supply(TEST_DATA):
-    if len(TEST_DATA) == 0:
+def upload_supply(supply_data):
+    if len(supply_data) == 0:
         return {}
 
     output = []
-    for file in TEST_DATA:
-        new_d = get_supply(file)[['months', 'department', 'supply']]
+    for file in supply_data:
+        new_d = get_supply(file)[['months', 'department', 'supply', 'slot_booked']]
         new_ds = new_d.to_dict(orient='records')
         for d in new_ds:
             update_data(DB_FILE, d)
@@ -354,7 +388,7 @@ def _calc_WTA(demand: int, supply: int, slots_booked: int, carry_over: int) -> f
         return 0.0
     else:
         WTA = (carry_over - slots_avail) / demand * 100
-        if WTA > 1:
+        if WTA > 100:
             return 100.0
         else:
             return WTA
@@ -404,9 +438,9 @@ def calc_WTA(df, first=True):
         return WTA_list
 
 def get_WTA(demand, supply, slots_booked):
-    df = pd.DataFrame([demand, supply, slots_booked], columns=['demand','supply','slots_booked'])
+    df = pd.DataFrame({'demand':demand, 'supply':supply, 'slots_booked':slots_booked}, columns=['demand','supply','slots_booked'])
     df = modify_df(df)
-    print(df[['demand','supply','slots_booked','carry_over']])
+
     return calc_WTA(df)
 
 def predict_upload(ds):
@@ -417,17 +451,17 @@ def _predict_upload(predicted_year=2024, predicted_month=1, department='ENT'):
     data = get_training_months(predicted_year=predicted_year, predicted_month=predicted_month, department=department)
     PREDICT_LEN = 3
     MINIMUM_TRAIN = 24
-    if len(data) <= MINIMUM_TRAIN - PREDICT_LEN:
+    if len(data) <= MINIMUM_TRAIN:
         return []
-    wta_predicted, rmse = default_model(data, predict_len=PREDICT_LEN)
+    predicted_demand, rmse = default_model(data, predict_len=PREDICT_LEN)
     print(f"Model: RMSE: {rmse}")
-    if len(wta_predicted == PREDICT_LEN):
+    if len(predicted_demand == PREDICT_LEN):
         timeseries = pd.date_range(start=f"{predicted_year}-{predicted_month}-1", periods=PREDICT_LEN, freq='MS')
         output = []
         for idx,ts in enumerate(timeseries):
             output.append({
                 'months':ts.strftime("%Y-%m"),
-                'Predicted_Demand':int(wta_predicted[idx]),
+                'Predicted_Demand':int(predicted_demand[idx]),
                 'department':department
             })
         for d in output:
@@ -443,6 +477,7 @@ def predict_all(time_start, time_end, departments=['ENT','GAS','OTO']):
 
 
 if __name__ == "__main__":
+    refresh_configuration()
     refresh_database()
-    refresh_config()
+    refresh_department_config()
     predict_all(time_start='2022-02-01',time_end='2024-12-01')

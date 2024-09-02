@@ -5,98 +5,39 @@ from typing import Callable
 from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
 
 from collections import namedtuple
+
+import pandas as pd
+
 from main_util import start_side_button, start_up, DEFAULT_LABEL_FONT
+from controller_db import refresh_configuration, CONFIGURATION_EXCEL, append_config
+
+
 
 def create_configuration_screen(func_canvas):
-    global input_location_model
+    refresh_configuration()
+    global input_location_model, configuration_df
+    configuration_df = pd.read_excel(CONFIGURATION_EXCEL)
 
-    input_location_model = tkinter.StringVar(func_canvas)
-
-    label_box = tkinter.Label(func_canvas,
-                      text = "Current Model",
-                      **DEFAULT_LABEL_FONT)
-
-    func_canvas.create_window((1, 55), window=label_box, anchor='w')
-
-    text_box = Entry(func_canvas, textvariable=input_location_model,  width=90)
-    text_box.config(state='disabled')
-
-    func_canvas.create_window((90, 55), height=30, window=text_box, anchor='w')
-
-    button_explore = Button(func_canvas,
-                            text = "Browse Files",
-                            command = browseFiles)
-
-
-    func_canvas.create_window((680, 55), window=button_explore, anchor='w')
-
+    POS_X = 5
+    POS_Y = 20
+    DIFF = 50
+    for idx, r in configuration_df.iterrows():
+        label_box = tkinter.Label(func_canvas,
+                                  text=r['Config Key'],
+                                  **DEFAULT_LABEL_FONT)
+        func_canvas.create_window((POS_X, POS_Y), window=label_box, anchor='w')
+        var = tkinter.StringVar()
+        var.set(r['Config Value'])
+        label_text = Entry(func_canvas, textvariable=var, width=120)
+        func_canvas.create_window((POS_X, POS_Y+20), window=label_text, anchor='w', height=20)
+        POS_Y += DIFF
 
     add_new = Button(func_canvas,
                             text = "Save Settings",
-                            command = lambda : print(f"Add New file: {input_location_model.get()}"))
+                            command = lambda : append_config())
 
 
-    func_canvas.create_window((763, 133), window=add_new, anchor='w')
-
-    func_canvas.create_rectangle(
-        0.0,
-        200.0,
-        1186.0,
-        205,
-        fill="#009C54",
-        outline="")
-
-    global output_location_model, output_model_settings
-    output_location_model = tkinter.StringVar(func_canvas)
-    output_model_settings = tkinter.StringVar(func_canvas)
-
-    label_box = tkinter.Label(func_canvas,
-                      text = "Output Model Path",
-                      **DEFAULT_LABEL_FONT)
-
-    func_canvas.create_window((145, 225), window=label_box, anchor='e')
-
-
-    text_box = Entry(func_canvas, textvariable=output_location_model,  width=80)
-    text_box.config(state='disabled')
-
-    func_canvas.create_window((150, 225), height=30, window=text_box, anchor='w')
-
-
-    button_explore = Button(func_canvas,
-                            text = "Browse Files",
-                            command = browseFiles)
-
-    func_canvas.create_window((680, 225), window=button_explore, anchor='w')
-
-
-    label_box = tkinter.Label(func_canvas,
-                      text = "Output Model Settings",
-                      **DEFAULT_LABEL_FONT)
-
-    func_canvas.create_window((145, 280), window=label_box, anchor='e')
-
-    text_box = Entry(func_canvas, textvariable=output_model_settings,  width=80)
-    text_box.config(state='disabled')
-
-    func_canvas.create_window((150, 280), window=text_box, height=30, anchor='w')
-
-    button_explore = Button(func_canvas,
-                            text = "Browse Files",
-                            command = browseFiles)
-
-
-    func_canvas.create_window((680, 280), window=button_explore, anchor='w')
-
-    add_new = Button(func_canvas,
-                            text = "Start Training",
-                            command = lambda : print(f"Add New file: {output_model_settings.get()}"))
-
-    func_canvas.create_window((763, 350), window=add_new, anchor='w')
-
-    model_training_output_box = Text(func_canvas, height=13, width=105, bg='white', borderwidth=3)
-
-    func_canvas.create_window((1, 500), window=model_training_output_box, anchor='w')
+    func_canvas.create_window((763, 500), window=add_new, anchor='w')
 
 if __name__ == "__main__":
     global window, canvas, func_canvas

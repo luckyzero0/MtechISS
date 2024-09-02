@@ -11,7 +11,7 @@ SECONDARY_COLOR = "#030C5D"
 BACKGROUND_COLOR = "#edfff6"
 BTN_COLOR = '#007d3e'
 
-DEPARTMENT = ['Orthopaedic Surgery', 'Otolaryngology', 'Gastroenterology']
+DEPARTMENT = ['Gastroenterology','Orthopaedic Surgery', 'Otolaryngology']
 
 DEFAULT_LABEL_FONT = dict(fg="black",
                           font=("Arial", 9, 'bold'),
@@ -34,13 +34,16 @@ def create_button(window, file_asset: str, positions: dict, command: Callable) -
 
 
 def start_up():
-    from controller_db import refresh_config, refresh_database
-    refresh_config()
+    from controller_db import refresh_department_config, refresh_database, refresh_configuration
+    refresh_configuration()
+    refresh_department_config()
     refresh_database()
     window = Tk()
     window.title("ApptInsight")
     window.geometry("1186x724")
     window.configure(bg="#FFFFFF")
+
+    window.iconbitmap("./assets/img/image_1.ico")
 
     global canvas
     global func_canvas
@@ -128,6 +131,12 @@ def nav_model_management():
     from model_management_gui import create_model_management_screen
     create_model_management_screen(func_canvas)
 
+def nav_configuration():
+    clear_canvas_func()
+    from model_management_gui import create_model_management_screen
+    from configuration_gui import create_configuration_screen
+    create_configuration_screen(func_canvas)
+
 
 def nav_main_gui():
     clear_canvas_func()
@@ -157,7 +166,7 @@ def start_side_button(window):
         'config_button': {
             'file_asset': 'configuration_button.png',
             'positions': dict(x=15.0, y=580.0),
-            'command': lambda: print("Configuration Clicked")
+            'command': lambda: nav_configuration()
         },
     }
     SIDE_BUTTONS = {}
@@ -210,4 +219,5 @@ class TextRedirector(object):
         self.widget.configure(state="normal")
         self.widget.update()
         self.widget.insert("end", string, (self.tag,))
+        self.widget.see(tkinter.END)
         self.widget.configure(state="disabled")

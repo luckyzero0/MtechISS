@@ -15,11 +15,23 @@ from dateutil.relativedelta import relativedelta
 from main_util import start_side_button, start_up, WidgetLogger, ConsoleLogger, TextRedirector, BACKGROUND_COLOR, \
     DEFAULT_LABEL_FONT
 from controller_db import get_supply, upload_demand, upload_supply, get_WTA, update_data, DB_FILE, refresh_database, \
-    _predict_upload, predict_upload
+    _predict_upload, predict_upload, refresh_configuration
 
+
+# gif_path = 'assets/img/loading.gif'
+# frames = [PhotoImage(file=gif_path, format=f"gif -index {i}") for i in range(100)]
+# frame_count = len(frames)
+# def update_gif(ind):
+#     frame = frames[ind]
+#     ind += 1
+#     if ind == frame_count:  # Loop the GIF
+#         ind = 0
+#     label.configure(image=frame)
+#     root.after(100, update_gif, ind)
 
 def browseFilesDemand():
-    filename = filedialog.askopenfilenames(initialdir="./",
+    initial_dir = globals().get('DEFAULT_SEARCH_FOLDER', './')
+    filename = filedialog.askopenfilenames(initialdir=initial_dir,
                                            title="Select a File",
 
                                            filetypes=(("Excel files",
@@ -30,7 +42,8 @@ def browseFilesDemand():
 
 
 def browseFilesSupply():
-    filename = filedialog.askopenfilenames(initialdir="./",
+    initial_dir = globals().get('DEFAULT_SEARCH_FOLDER', './')
+    filename = filedialog.askopenfilenames(initialdir=initial_dir,
                                            title="Select a File",
 
                                            filetypes=(("Excel files",
@@ -41,43 +54,64 @@ def browseFilesSupply():
 
 
 def get_next_n_months(start_month, n=3):
+    """
+    Get a list of Nth month after start month, including itself
+    :param start_month:
+    :param n:
+    :return:
+    """
     start_date = datetime.datetime.strptime(start_month, "%Y-%m")
-    months_list = [(start_date + relativedelta(months=i)).strftime("%Y-%m") for i in range(n)]
+    if n < 0:
+        months_list = [(start_date - relativedelta(months=i)).strftime("%Y-%m") for i in range(0, (n*-1)+1 )]
+    else:
+        months_list = [(start_date + relativedelta(months=i)).strftime("%Y-%m") for i in range(0, n+1)]
     return months_list
 
 
 def get_WTA_data(category, month, department):
     main_stats_month = refresh_database()
-    months = get_next_n_months(start_month=month)
+    months = get_next_n_months(start_month=month, n=3)
 
-    filtered = main_stats_month.query(f"Months in {tuple(months)} and Department == '{department}'")
-    print(filtered)
+    filtered = main_stats_month.query(f"Months in {tuple(months)} and Department == '{department}'").sort_values(
+        'Months')
+
     if category == 'actual':
         demand = filtered.Demand.values
     elif category == "predicted":
         demand = filtered.Predicted_Demand.values
-    slots_booked = filtered.Slot_booked.values
-    supply = filtered.Supply
+    slots_booked = filtered.Slot_booked.fillna(0).values
+    supply = filtered.Supply.values
     return demand, supply, slots_booked
 
 
-def refresh_WTA(new_ds, category='actual'):
-    for x in new_ds:
-        demand, supply, slots_booked = get_WTA_data(category, month=x.get('months'), department=x.get('department'))
+def refresh_WTA(new_ds, category='actual', full=True):
+    def _refresh_WTA(month):
+        demand, supply, slots_booked = get_WTA_data(category=category, month=month,
+                                                    department=x.get('department'))
         if len(demand) < 3:
-            continue
+            return -1
         wta = get_WTA(demand, supply, slots_booked)
-        print(f"WTA Calculated: {wta}")
+        print(f"{category} WTA Calculated: {wta}")
         temp = {
-            'months': x.get('months'),
+            'months': month,
             'department': x.get('department')
         }
         if category == 'actual':
             temp['actual_wta'] = wta
-        elif category == 'predict':
-            temp['predict_wta'] = wta
+        elif category == 'predicted':
+            temp['predicted_wta'] = wta
+        else:
+            print("Incorrect category")
         update_data(DB_FILE, temp)
 
+    DB_FILE = "./assets/DB/DB File.xlsx"
+    for x in new_ds:
+        if full:
+            _refresh_WTA(get_next_n_months(x.get('months'), -1)[-1])
+            _refresh_WTA(get_next_n_months(x.get('months'), 1)[-1])
+            _refresh_WTA(get_next_n_months(x.get('months'), 2)[-1])
+
+        _refresh_WTA(x.get('months'))
 
 
 def start_uploading_demand():
@@ -90,6 +124,7 @@ def start_uploading_demand():
     print("Starting Prediction")
     predict_upload(new_ds)
     print("Starting_WTA_calculation")
+    refresh_WTA(new_ds, category='actual')
     refresh_WTA(new_ds, category='predicted')
     input_location_demand.set("")
     print("Completed uploaded")
@@ -100,6 +135,7 @@ def start_uploading_supply():
     new_ds = upload_supply(literal_eval(input_location_supply.get()))
     print("Upload_supply Ended")
     print("Starting_WTA_calculation")
+    refresh_WTA(new_ds, category='actual')
     refresh_WTA(new_ds, category='predicted')
     input_location_supply.set("")
     print("Completed uploaded")
@@ -107,6 +143,7 @@ def start_uploading_supply():
 
 def create_add_new_gui_screen(func_canvas):
     global input_location_demand, input_location_supply
+    refresh_configuration()
     input_location_demand = tkinter.StringVar(func_canvas)
 
     label_box = tkinter.Label(func_canvas,
