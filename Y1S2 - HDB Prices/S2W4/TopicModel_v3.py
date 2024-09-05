@@ -12,7 +12,7 @@ Created on Mon Aug 19 12:16:43 2019
 
 import numpy as np
 import pandas as pd
-news=pd.read_table('MovieStories.utf8.txt',header=0)
+news=pd.read_table('MovieStories.utf8.txt', header=0)
 
 
 #########################################################Preprocessing

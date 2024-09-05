@@ -113,21 +113,29 @@ def refresh_WTA(new_ds, category='actual', full=True):
 
         _refresh_WTA(x.get('months'))
 
-
+def set_notice(notice_message):
+    print(f"""
+    {'#'*30}
+    {notice_message}
+    {'#'*30}
+    """)
 def start_uploading_demand():
     if input_location_demand.get():
-        print("Starting_upload_demand")
+        set_notice("Starting_upload_demand")
+
         new_ds = upload_demand(literal_eval(input_location_demand.get()))
     else:
         return
     print("Upload_demand Ended")
-    print("Starting Prediction")
+    set_notice("Starting Prediction")
+
     predict_upload(new_ds)
-    print("Starting_WTA_calculation")
+    set_notice("Starting_WTA_calculation")
     refresh_WTA(new_ds, category='actual')
     refresh_WTA(new_ds, category='predicted')
     input_location_demand.set("")
-    print("Completed uploaded")
+    set_notice("""Completed upload""")
+
 
 
 def start_uploading_supply():

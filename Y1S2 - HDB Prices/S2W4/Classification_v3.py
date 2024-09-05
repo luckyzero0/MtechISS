@@ -18,7 +18,7 @@ import pandas as pd
 
 import os
 # os.chdir('./S2W4')
-news=pd.read_table('r8-train-all-terms.txt',header=None,names = ["Class", "Text"])
+news=pd.read_table('r8-train-all-terms.txt', header=None, names = ["Class", "Text"])
 news.head()
 a = news.groupby("Class")
 a.head()

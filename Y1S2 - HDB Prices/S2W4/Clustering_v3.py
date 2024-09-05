@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 
-news=pd.read_table('r8-train-all-terms.txt',header=None,names = ["Class", "Text"])
+news=pd.read_table('r8-train-all-terms.txt', header=None, names = ["Class", "Text"])
 news.groupby('Class').size()
 
 subnews=news[(news.Class=="interest")| (news.Class=='crude')|(news.Class=='money-fx') ]
