@@ -1,11 +1,12 @@
+"""
+Deprecated Class
+"""
+
 import tkinter
-from pathlib import Path
-from typing import Callable
+from tkinter import Entry, Text, Button, filedialog
+from main_util import start_side_button, start_up
+from config import DEFAULT_LABEL_FONT
 
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
-
-from collections import namedtuple
-from main_util import start_side_button, start_up, DEFAULT_LABEL_FONT
 
 
 def browseFiles():

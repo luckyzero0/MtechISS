@@ -4,16 +4,14 @@ import sys
 import tkinter
 from ast import literal_eval
 
-
-from tkinter import  Entry, Button, filedialog, scrolledtext
+from tkinter import Entry, Button, filedialog, scrolledtext
 import config
 from config import refresh_configuration
-
 
 from dateutil.relativedelta import relativedelta
 
 from main_util import start_side_button, start_up, TextRedirector, set_notice
-from controller_db import  upload_demand, upload_supply, get_WTA, update_data, refresh_database, predict_upload
+from controller_db import upload_demand, upload_supply, get_WTA, update_data, refresh_database, predict_upload
 
 
 def browseFilesDemand():
@@ -49,9 +47,9 @@ def get_next_n_months(start_month, n=3):
     """
     start_date = datetime.datetime.strptime(start_month, "%Y-%m")
     if n < 0:
-        months_list = [(start_date - relativedelta(months=i)).strftime("%Y-%m") for i in range(0, (n*-1)+1 )]
+        months_list = [(start_date - relativedelta(months=i)).strftime("%Y-%m") for i in range(0, (n * -1) + 1)]
     else:
-        months_list = [(start_date + relativedelta(months=i)).strftime("%Y-%m") for i in range(0, n+1)]
+        months_list = [(start_date + relativedelta(months=i)).strftime("%Y-%m") for i in range(0, n + 1)]
     return months_list
 
 
@@ -118,7 +116,6 @@ def start_uploading_demand():
     refresh_WTA(new_ds, category='predicted')
     input_location_demand.set("")
     set_notice("""Completed upload""")
-
 
 
 def start_uploading_supply():

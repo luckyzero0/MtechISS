@@ -1,6 +1,6 @@
 import datetime
 import pandas as pd
-from collections import defaultdict, namedtuple
+from collections import namedtuple
 from dateutil.relativedelta import relativedelta
 from main_util import set_notice
 from openpyxl.reader.excel import load_workbook
@@ -12,6 +12,7 @@ def refresh_database():
     global main_stats_month
     main_stats_month = pd.read_excel(config.DB_FILE, sheet_name='Month_Stats')
     return main_stats_month
+
 
 def long_department_to_code(long_s: str):
     if long_s.upper() == 'ALL':
@@ -31,12 +32,13 @@ def month2idx(months="Jul"):
     MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
     return MONTHS.index(months) + 1
 
+
 def get_training_months(predicted_year, predicted_month, department):
     TRAINING_WINDOW = 24
     TESTING_WINDOW = 3
     refresh_database()
     predict_year_month = datetime.date(day=1, month=predicted_month, year=predicted_year)
-    start_date_train = predict_year_month - relativedelta(months=TRAINING_WINDOW+TESTING_WINDOW+1)
+    start_date_train = predict_year_month - relativedelta(months=TRAINING_WINDOW + TESTING_WINDOW + 1)
     end_date_train = predict_year_month - relativedelta(months=1)
     filtered_df = main_stats_month[main_stats_month.Department == department]
     train_date_list = [x.strftime("%Y-%m") for x in pd.date_range(start_date_train, end_date_train)]
@@ -44,9 +46,10 @@ def get_training_months(predicted_year, predicted_month, department):
     return train_df
 
 
-
 def create_month_year(year, month):
     return f"{int(year)}-{str(int(month)).zfill(2)}"
+
+
 def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     def get_threshold(department):
         return eval(
@@ -69,7 +72,7 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
     MONTH_DATA = {'Year': str(year)}
     MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-    color='black'
+    color = 'black'
     for i in range(1, 13):
         output = filtered.query(f"Months == '{create_month_year(year, i)}'")
         if len(output) == 0:
@@ -88,7 +91,6 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
             else:
                 percentage_str = "Not Avaliable"
                 color = 'Black'
-
 
         #
         MONTH_DATA[MONTHS[i - 1]] = MonthData(MONTHS[i - 1], percentage_str, color)
@@ -115,12 +117,14 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
                       }
 
     return MONTH_DATA, statistics
+
+
 def append_config_df(df):
     from openpyxl.reader.excel import load_workbook
     wb = load_workbook(config.CONFIGURATION_EXCEL)
     ws = wb.active
     temp = 2
-    for idx,r in df.iterrows():
+    for idx, r in df.iterrows():
         ws.cell(temp, 1).value = r['Config Key']
         ws.cell(temp, 2).value = r['Config Value']
         temp += 1
@@ -128,11 +132,18 @@ def append_config_df(df):
     wb.save(config.CONFIGURATION_EXCEL)
     wb.close()
 
+
 def append_config():
     append_config_df(pd.DataFrame(config.CONFIGURATION))
     print("Completed Appending")
 
+
 def regroup_specialty(dept):
+    """
+    Changing Subcodes to Short Codes
+    :param dept:
+    :return:
+    """
     def get_mapper():
         mapper = config.department_config[['Department SubCodes', 'Department Short Code']].set_index(
             'Department SubCodes')
@@ -144,6 +155,12 @@ def regroup_specialty(dept):
 
 
 def get_supply(input_file_path, department_interested=['GENT', 'GE1H', 'GE1S', 'GOTO', 'GO1S', 'GGAS']):
+    """
+    Main Function in getting supply from SGH supply files
+    :param input_file_path: Input File Path
+    :param department_interested: Deparmtnent short codes that are interested
+    :return:
+    """
     COLS_TO_IDENTIFY = ['Resource', 'Resource Date', 'SessionType', 'Room', 'Slot Payment Class Type',
                         'Slot Visit Type']
     PRIORITY_LIST = {'Daily': 1, ',Weekly': 2, 'Week of Month': 3}
@@ -229,7 +246,8 @@ def get_supply(input_file_path, department_interested=['GENT', 'GE1H', 'GE1S', '
     # Group by Specialty (Recoded) and sum the adjusted values
     final_df = summarised_df.groupby(['Department', 'Resource Month'])[
         ['Adjusted True Booked', 'Adjusted True Supply']].sum().round().reset_index()
-    final_df.rename(columns={'Adjusted True Supply': 'supply', 'Resource Month': 'months', 'Department': 'department','Adjusted True Booked':'slot_booked'},
+    final_df.rename(columns={'Adjusted True Supply': 'supply', 'Resource Month': 'months', 'Department': 'department',
+                             'Adjusted True Booked': 'slot_booked'},
                     inplace=True)
     print(final_df)
     return final_df
@@ -270,7 +288,7 @@ def get_demand(input_file_paths):
                 'department': department,
                 'demand': cnt,
                 'actual_wta_demand': len(temp_WTA),
-                'actual_wta': len(temp_WTA[temp_WTA['Appointment Waiting Time (days)'] <= 60])/len(temp_WTA)
+                'actual_wta': len(temp_WTA[temp_WTA['Appointment Waiting Time (days)'] <= 60]) / len(temp_WTA)
             })
     return pd.DataFrame(master_list)
 
@@ -347,13 +365,13 @@ def upload_demand(TEST_DATA):
     set_notice("Uploading Step completed", 'small')
     return new_ds
 
+
 def upload_supply(supply_data):
     if len(supply_data) == 0:
         return {}
-
     output = []
     for file in supply_data:
-        new_d = get_supply(file)[['months', 'department', 'supply', 'slot_booked']]
+        new_d = get_supply(file, config.SHORT_DEPARTMENT)[['months', 'department', 'supply', 'slot_booked']]
         new_ds = new_d.to_dict(orient='records')
         for d in new_ds:
             update_data(config.DB_FILE, d)
@@ -375,19 +393,13 @@ def _calc_WTA(demand: int, supply: int, slots_booked: int, carry_over: int) -> f
         else:
             return WTA
 
-'''
-Data will contain demand, supply and slots_booked and previous month's carry_over
-need to determine carry over based on previous months data
-'''
 
 # Function to calc carry over
 def calc_carry_over(demand: int, supply: int, slots_booked: int, carry_over: int) -> int:
     return abs((supply - slots_booked) - carry_over - demand)
 
 
-
 # Function will take in a df and modify it to add the carry_over column needed for WTA Calc
-
 def modify_df(df):
     carry_over = []
     for i in range(len(df)):
@@ -395,11 +407,10 @@ def modify_df(df):
             carry_over.append(0)
         else:
             value = calc_carry_over(df.demand[i - 1], df.supply[i - 1], df.slots_booked[i - 1], carry_over[i - 1])
-            # value = abs((df.supply[i-1] - df.slots_booked[i-1]) - carry_over[i-1] - df.demand[i-1])
+
             carry_over.append(value)
     df['carry_over'] = carry_over
     return df
-
 
 
 # Function will take in a df and return the WTA for the months except the last month
@@ -419,16 +430,21 @@ def calc_WTA(df, first=True):
     else:
         return WTA_list
 
+
 def get_WTA(demand, supply, slots_booked):
-    df = pd.DataFrame({'demand':demand, 'supply':supply, 'slots_booked':slots_booked}, columns=['demand','supply','slots_booked'])
+    df = pd.DataFrame({'demand': demand, 'supply': supply, 'slots_booked': slots_booked},
+                      columns=['demand', 'supply', 'slots_booked'])
     df = modify_df(df)
 
     return calc_WTA(df)
+
 
 def predict_upload(ds):
     for d in ds:
         date = pd.to_datetime(f"{d.get('months')}-01") + relativedelta(months=1)
         _predict_upload(predicted_year=date.year, predicted_month=date.month, department=d.get('department'))
+
+
 def _predict_upload(predicted_year=2024, predicted_month=1, department='ENT'):
     data = get_training_months(predicted_year=predicted_year, predicted_month=predicted_month, department=department)
     PREDICT_LEN = 3
@@ -440,28 +456,27 @@ def _predict_upload(predicted_year=2024, predicted_month=1, department='ENT'):
     if len(predicted_demand == PREDICT_LEN):
         timeseries = pd.date_range(start=f"{predicted_year}-{predicted_month}-1", periods=PREDICT_LEN, freq='MS')
         output = []
-        for idx,ts in enumerate(timeseries):
+        for idx, ts in enumerate(timeseries):
             output.append({
-                'months':ts.strftime("%Y-%m"),
-                'Predicted_Demand':int(predicted_demand.iloc[idx]),
-                'department':department
+                'months': ts.strftime("%Y-%m"),
+                'Predicted_Demand': int(predicted_demand.iloc[idx]),
+                'department': department
             })
         for d in output:
             update_data(config.DB_FILE, d)
         return output
-    else: return []
+    else:
+        return []
 
-def predict_all(time_start, time_end, departments=['ENT','GAS','OTO']):
+
+def predict_all(time_start, time_end, departments=['ENT', 'GAS', 'OTO']):
     for dept in departments:
         for date in pd.date_range(start=time_start, end=time_end, freq='MS'):
             print(date, dept)
             print(_predict_upload(date.year, date.month, dept))
 
 
-
-
-
 if __name__ == "__main__":
     config.refresh_configuration()
     refresh_database()
-    predict_all(time_start='2022-02-01',time_end='2024-12-01')
+    predict_all(time_start='2022-02-01', time_end='2024-12-01')

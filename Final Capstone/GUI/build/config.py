@@ -34,4 +34,4 @@ def refresh_department_config():
 CONFIGURATION = refresh_configuration()
 department_config = refresh_department_config()
 DEPARTMENT = department_config['Department Long Code'].unique()
-    # ['Gastroenterology','Orthopaedic Surgery', 'Otolaryngology']
+SHORT_DEPARTMENT =department_config['Department Short Code'].unique()

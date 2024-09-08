@@ -1,19 +1,11 @@
 import tkinter
-from pathlib import Path
-from typing import Callable
-
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
-
-from collections import namedtuple
-
+from tkinter import Entry, Button
 import pandas as pd
-from config import DEFAULT_LABEL_FONT
+
+import config
+from config import DEFAULT_LABEL_FONT, refresh_configuration
 from main_util import start_side_button, start_up
 from controller_db import append_config
-from config import refresh_configuration
-import config
-
-
 
 def create_configuration_screen(func_canvas):
     refresh_configuration()
