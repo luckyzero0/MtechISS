@@ -9,40 +9,6 @@ from add_new_gui import refresh_WTA
 
 global window, canvas, func_canvas, STATE, DEPARTMENT
 
-DB_FILE = "./assets/DB/DB File.xlsx"
-DB_CONFIG = './assets/DB/Department Short Codes.xlsx'
-
-
-# DB_CONFIG = globals().get('DB_CONFIG')
-# DB_FILE = globals().get('DB_FILE')
-
-# MonthData = namedtuple(typename='MonthData', field_names=['month_txt', 'per_txt', 'rec_colour'])
-#
-# MONTH_DATA = {
-#     'Year': '2024',
-#     'Jan': MonthData('Jan', '30%', 'black'),
-#     'Feb': MonthData('Feb', '29%', 'black'),
-#     'Mar': MonthData('Mar', '28%', 'black'),
-#     'Apr': MonthData('Apr', '27%', 'black'),
-#     'May': MonthData('May', '26%', 'black'),
-#     'Jun': MonthData('Jun', '25%', 'black'),
-#     'Jul': MonthData('Jul', '24%', 'black'),
-#     'Aug': MonthData('Aug', '23%', 'black'),
-#     'Sep': MonthData('Sep', '22%', 'black'),
-#     'Oct': MonthData('Oct', '21%', 'black'),
-#     'Nov': MonthData('Nov', '20%', 'black'),
-#     'Dec': MonthData('Dec', '19%', 'black'),
-# }
-#
-
-# statistics = {f'{state["month_selected"]} YTD WTA': '30%',
-#               f'{state["month_selected"]} YTD Demand': '1000',
-#               f'{state["month_selected"]} YTD Supply': '120',
-#               f'{state["month_selected"]} Predicted WTA': '30%',
-#               f'{state["month_selected"]} Total Expected': '1200',
-#               f'{state["month_selected"]} Supply Adjustment': '130'
-#               }
-
 def get_month_data(*args):
     """
     To Get the clicked month Data
@@ -184,7 +150,7 @@ def create_month_grid(func_canvas, month_data, selected=0):
         else:
             if idx == selected:
 
-                outline = BTN_COLOR
+                outline = config.BTN_COLOR
                 width = '3'
             else:
                 outline = '#000000'
@@ -232,12 +198,12 @@ def create_statistic(func_canvas, statistic):
     for idx, (k, v) in enumerate(statistic.items()):
         key_var = tkinter.StringVar(func_canvas, value=k + ":")
 
-        t_box = tkinter.Label(master=func_canvas, textvariable=key_var, bg=BACKGROUND_COLOR,
+        t_box = tkinter.Label(master=func_canvas, textvariable=key_var, bg=config.BACKGROUND_COLOR,
                               font=("ArimoRoman Bold", 20 * -1,), justify='right')
         func_canvas.create_window((CUR_POS[0], CUR_POS[1]), window=t_box)
 
         v_var = tkinter.StringVar(func_canvas, value=v)
-        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg=BACKGROUND_COLOR,
+        v_box = tkinter.Label(master=func_canvas, textvariable=v_var, bg=config.BACKGROUND_COLOR,
                               font=("ArimoRoman Bold", 20 * -1),
                               justify='left', )
 
@@ -260,7 +226,8 @@ def create_main_screen(func_canvas, startup=False):
     """
     global statistics, MONTH_DATA, statistics_d, STATE
 
-    from controller_db import get_all_months_data, refresh_database, refresh_department_config, refresh_configuration
+    from controller_db import get_all_months_data, refresh_database
+    from config import refresh_configuration, DEPARTMENT, refresh_department_config
     refresh_configuration()
     refresh_database()
     refresh_department_config()
@@ -276,13 +243,13 @@ def create_main_screen(func_canvas, startup=False):
     REC = [30, 20, 865, 65]
     func_canvas.create_rectangle(
         *REC,
-        fill=SECONDARY_COLOR,
+        fill=config.SECONDARY_COLOR,
         outline="black")
     cur_select_department = tkinter.StringVar()
     selected_department_long = code_to_long_department(selected_department)
     cur_select_department.set(selected_department_long)
     dropdown = tkinter.OptionMenu(func_canvas, cur_select_department, *DEPARTMENT, command=get_department)
-    dropdown.configure(bg=("%s" % SECONDARY_COLOR), fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0,
+    dropdown.configure(bg=("%s" % config.SECONDARY_COLOR), fg='#FFFFFF', font=("OpenSansRoman Bold", 20 * -1), borderwidth=0,
                        highlightthickness=0)
     func_canvas.create_window((450, 40), window=dropdown)
     create_month_grid(func_canvas, MONTH_DATA, selected=selected_month)

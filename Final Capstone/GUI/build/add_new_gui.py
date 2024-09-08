@@ -1,36 +1,23 @@
 import datetime
-import logging
+
 import sys
 import tkinter
 from ast import literal_eval
-from pathlib import Path
-from typing import Callable
 
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog, scrolledtext
 
-from collections import namedtuple
+from tkinter import  Entry, Button, filedialog, scrolledtext
+import config
+from config import refresh_configuration
+
 
 from dateutil.relativedelta import relativedelta
 
-from main_util import start_side_button, start_up, WidgetLogger, ConsoleLogger, TextRedirector, BACKGROUND_COLOR, \
-    DEFAULT_LABEL_FONT
-from controller_db import get_supply, upload_demand, upload_supply, get_WTA, update_data, DB_FILE, refresh_database, \
-    _predict_upload, predict_upload, refresh_configuration
+from main_util import start_side_button, start_up, TextRedirector, set_notice
+from controller_db import  upload_demand, upload_supply, get_WTA, update_data, refresh_database, predict_upload
 
-
-# gif_path = 'assets/img/loading.gif'
-# frames = [PhotoImage(file=gif_path, format=f"gif -index {i}") for i in range(100)]
-# frame_count = len(frames)
-# def update_gif(ind):
-#     frame = frames[ind]
-#     ind += 1
-#     if ind == frame_count:  # Loop the GIF
-#         ind = 0
-#     label.configure(image=frame)
-#     root.after(100, update_gif, ind)
 
 def browseFilesDemand():
-    initial_dir = globals().get('DEFAULT_SEARCH_FOLDER', './')
+    initial_dir = config.DEFAULT_SEARCH_FOLDER
     filename = filedialog.askopenfilenames(initialdir=initial_dir,
                                            title="Select a File",
 
@@ -42,7 +29,7 @@ def browseFilesDemand():
 
 
 def browseFilesSupply():
-    initial_dir = globals().get('DEFAULT_SEARCH_FOLDER', './')
+    initial_dir = config.DEFAULT_SEARCH_FOLDER
     filename = filedialog.askopenfilenames(initialdir=initial_dir,
                                            title="Select a File",
 
@@ -79,6 +66,8 @@ def get_WTA_data(category, month, department):
         demand = filtered.Demand.values
     elif category == "predicted":
         demand = filtered.Predicted_Demand.values
+    else:
+        raise "Incorrect Category in get_WTA_data function"
     slots_booked = filtered.Slot_booked.fillna(0).values
     supply = filtered.Supply.values
     return demand, supply, slots_booked
@@ -102,9 +91,8 @@ def refresh_WTA(new_ds, category='actual', full=True):
             temp['predicted_wta'] = wta
         else:
             print("Incorrect category")
-        update_data(DB_FILE, temp)
+        update_data(config.DB_FILE, temp)
 
-    DB_FILE = "./assets/DB/DB File.xlsx"
     for x in new_ds:
         if full:
             _refresh_WTA(get_next_n_months(x.get('months'), -1)[-1])
@@ -113,12 +101,7 @@ def refresh_WTA(new_ds, category='actual', full=True):
 
         _refresh_WTA(x.get('months'))
 
-def set_notice(notice_message):
-    print(f"""
-    {'#'*30}
-    {notice_message}
-    {'#'*30}
-    """)
+
 def start_uploading_demand():
     if input_location_demand.get():
         set_notice("Starting_upload_demand")
@@ -156,7 +139,7 @@ def create_add_new_gui_screen(func_canvas):
 
     label_box = tkinter.Label(func_canvas,
                               text="New Data File",
-                              **DEFAULT_LABEL_FONT
+                              **config.DEFAULT_LABEL_FONT
                               )
 
     func_canvas.create_window((95, 50), window=label_box, anchor='e')
@@ -182,7 +165,7 @@ def create_add_new_gui_screen(func_canvas):
 
     label_box = tkinter.Label(func_canvas,
                               text="New Supply File",
-                              **DEFAULT_LABEL_FONT)
+                              **config.DEFAULT_LABEL_FONT)
 
     func_canvas.create_window((95, 100), window=label_box, anchor='e')
 

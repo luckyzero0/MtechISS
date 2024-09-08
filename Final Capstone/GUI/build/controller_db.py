@@ -1,50 +1,29 @@
 import datetime
-
 import pandas as pd
 from collections import defaultdict, namedtuple
-
 from dateutil.relativedelta import relativedelta
+from main_util import set_notice
 from openpyxl.reader.excel import load_workbook
+from controller_model import get_best_prediction
+import config
 
-from controller_model import default_model
-
-CONFIGURATION = defaultdict(lambda x: "")
-
-CONFIGURATION_EXCEL = './assets/DB/Configuration.xlsx'
-DB_CONFIG = CONFIGURATION.get('DB_CONFIG')
-DB_FILE = CONFIGURATION.get('DB_FILE')
-
-def refresh_configuration():
-    global CONFIGURATION
-
-    configuration_df = pd.read_excel(CONFIGURATION_EXCEL)
-    CONFIGURATION = zip(configuration_df['Config Key'], configuration_df['Config Value'])
-    globals().update(CONFIGURATION)
-    return CONFIGURATION
 
 def refresh_database():
     global main_stats_month
-    main_stats_month = pd.read_excel(DB_FILE, sheet_name='Month_Stats')
+    main_stats_month = pd.read_excel(config.DB_FILE, sheet_name='Month_Stats')
     return main_stats_month
-
-
-def refresh_department_config():
-    global department_config
-    department_config = pd.read_excel(DB_CONFIG, sheet_name='Department_config')
-    return department_config
-
 
 def long_department_to_code(long_s: str):
     if long_s.upper() == 'ALL':
         return 'ALL'
-    mapper = department_config[['Department Short Code', 'Department Long Code']].drop_duplicates()
+    mapper = config.department_config[['Department Short Code', 'Department Long Code']].drop_duplicates()
     return mapper[mapper['Department Long Code'] == long_s]['Department Short Code'].iloc[0]
 
 
 def code_to_long_department(code: str):
     if code.upper() == 'ALL':
         return 'ALL'
-    mapper = department_config[['Department Short Code', 'Department Long Code']].drop_duplicates()
+    mapper = config.department_config[['Department Short Code', 'Department Long Code']].drop_duplicates()
     return mapper[mapper['Department Short Code'] == code]['Department Long Code'].iloc[0]
 
 
@@ -70,7 +49,8 @@ def create_month_year(year, month):
     return f"{int(year)}-{str(int(month)).zfill(2)}"
 def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     def get_threshold(department):
-        return eval(department_config[department_config['Department Short Code'] == department].Threshold.iloc[0])
+        return eval(
+            config.department_config[config.department_config['Department Short Code'] == department].Threshold.iloc[0])
 
     THRESHOLD = get_threshold(department)
 
@@ -137,7 +117,7 @@ def get_all_months_data(year: int = 2024, month: int = 1, department='ALL'):
     return MONTH_DATA, statistics
 def append_config_df(df):
     from openpyxl.reader.excel import load_workbook
-    wb = load_workbook(CONFIGURATION_EXCEL)
+    wb = load_workbook(config.CONFIGURATION_EXCEL)
     ws = wb.active
     temp = 2
     for idx,r in df.iterrows():
@@ -145,16 +125,16 @@ def append_config_df(df):
         ws.cell(temp, 2).value = r['Config Value']
         temp += 1
         print(f"Added into {r['Config Key']}, {r['Config Value']}")
-    wb.save(CONFIGURATION_EXCEL)
+    wb.save(config.CONFIGURATION_EXCEL)
     wb.close()
 
 def append_config():
-    append_config_df(pd.DataFrame(CONFIGURATION))
+    append_config_df(pd.DataFrame(config.CONFIGURATION))
     print("Completed Appending")
 
 def regroup_specialty(dept):
     def get_mapper():
-        mapper = department_config[['Department SubCodes', 'Department Short Code']].set_index(
+        mapper = config.department_config[['Department SubCodes', 'Department Short Code']].set_index(
             'Department SubCodes')
         mapper_dict = mapper['Department Short Code'].to_dict()
         return mapper_dict
@@ -363,7 +343,8 @@ def upload_demand(TEST_DATA):
     new_d = get_demand(TEST_DATA)
     new_ds = new_d.to_dict(orient='records')
     for d in new_ds:
-        update_data(DB_FILE, d)
+        update_data(config.DB_FILE, d)
+    set_notice("Uploading Step completed", 'small')
     return new_ds
 
 def upload_supply(supply_data):
@@ -375,9 +356,10 @@ def upload_supply(supply_data):
         new_d = get_supply(file)[['months', 'department', 'supply', 'slot_booked']]
         new_ds = new_d.to_dict(orient='records')
         for d in new_ds:
-            update_data(DB_FILE, d)
+            update_data(config.DB_FILE, d)
         print(f"Uploaded {file}")
         output.extend(new_ds)
+        set_notice("Uploading Step completed", 'small')
     return new_ds
 
 
@@ -453,7 +435,7 @@ def _predict_upload(predicted_year=2024, predicted_month=1, department='ENT'):
     MINIMUM_TRAIN = 24
     if len(data) <= MINIMUM_TRAIN:
         return []
-    predicted_demand, rmse = default_model(data, predict_len=PREDICT_LEN)
+    predicted_demand, rmse = get_best_prediction(data, predict_len=PREDICT_LEN)
     print(f"Model: RMSE: {rmse}")
     if len(predicted_demand == PREDICT_LEN):
         timeseries = pd.date_range(start=f"{predicted_year}-{predicted_month}-1", periods=PREDICT_LEN, freq='MS')
@@ -461,11 +443,11 @@ def _predict_upload(predicted_year=2024, predicted_month=1, department='ENT'):
         for idx,ts in enumerate(timeseries):
             output.append({
                 'months':ts.strftime("%Y-%m"),
-                'Predicted_Demand':int(predicted_demand[idx]),
+                'Predicted_Demand':int(predicted_demand.iloc[idx]),
                 'department':department
             })
         for d in output:
-            update_data(DB_FILE, d)
+            update_data(config.DB_FILE, d)
         return output
     else: return []
 
@@ -476,8 +458,10 @@ def predict_all(time_start, time_end, departments=['ENT','GAS','OTO']):
             print(_predict_upload(date.year, date.month, dept))
 
 
+
+
+
 if __name__ == "__main__":
-    refresh_configuration()
+    config.refresh_configuration()
     refresh_database()
-    refresh_department_config()
     predict_all(time_start='2022-02-01',time_end='2024-12-01')

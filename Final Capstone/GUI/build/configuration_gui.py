@@ -7,16 +7,18 @@ from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage, filedialog
 from collections import namedtuple
 
 import pandas as pd
-
-from main_util import start_side_button, start_up, DEFAULT_LABEL_FONT
-from controller_db import refresh_configuration, CONFIGURATION_EXCEL, append_config
+from config import DEFAULT_LABEL_FONT
+from main_util import start_side_button, start_up
+from controller_db import append_config
+from config import refresh_configuration
+import config
 
 
 
 def create_configuration_screen(func_canvas):
     refresh_configuration()
     global input_location_model, configuration_df
-    configuration_df = pd.read_excel(CONFIGURATION_EXCEL)
+    configuration_df = pd.read_excel(config.CONFIGURATION_EXCEL)
 
     POS_X = 5
     POS_Y = 20

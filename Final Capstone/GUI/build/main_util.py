@@ -1,42 +1,44 @@
 import logging
-from pathlib import Path
-from tkinter import Tk, Canvas, Entry, Text, Button, PhotoImage
-from typing import Callable
 import tkinter
+from pathlib import Path
+from tkinter import Tk, Canvas, Button, PhotoImage
+from typing import Callable
 
-OUTPUT_PATH = Path(__file__).parent
-ASSETS_PATH = Path(r".\assets\img")
-
-SECONDARY_COLOR = "#030C5D"
-BACKGROUND_COLOR = "#edfff6"
-BTN_COLOR = '#007d3e'
-
-DEPARTMENT = ['Gastroenterology','Orthopaedic Surgery', 'Otolaryngology']
-
-DEFAULT_LABEL_FONT = dict(fg="black",
-                          font=("Arial", 9, 'bold'),
-                          bg=BACKGROUND_COLOR)
+import config
 
 
 def relative_to_assets(path: str):
-    return str(Path(ASSETS_PATH, path))
+    return str(Path(config.ASSETS_PATH, path))
 
 
-def create_button(window, file_asset: str, positions: dict, command: Callable) -> tkinter.Button:
+def create_button(window, file_asset: str, positions: dict, command: Callable):
     img = PhotoImage(file=relative_to_assets(file_asset))
 
-    button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat', fg='green', bg='white')
+    button = Button(window, image=img, borderwidth=0, highlightthickness=0, command=command, relief='flat', fg='green',
+                    bg='white')
     try:
         window.create_window((positions['x'], positions['y']), window=button)
     except AttributeError:
         button.place(**positions)
     return img, button
 
+def set_notice(notice_message, typ='big'):
+    if typ == 'big':
+        print(f"""
+        {'#'*30}
+        {notice_message}
+        {'#'*30}
+        """)
+    else:
+        print(f"""
+        {notice_message}
+        """)
 
 def start_up():
-    from controller_db import refresh_department_config, refresh_database, refresh_configuration
-    refresh_configuration()
-    refresh_department_config()
+    from controller_db import refresh_database
+
+    config.refresh_configuration()
+    config.refresh_department_config()
     refresh_database()
     window = Tk()
     window.title("ApptInsight")
@@ -59,7 +61,7 @@ def start_up():
     canvas.place(x=0, y=0)
     func_canvas = Canvas(
         window,
-        bg=BACKGROUND_COLOR,
+        bg=config.BACKGROUND_COLOR,
         height=724,
         width=1186,
         bd=0,
@@ -84,7 +86,7 @@ def start_up():
         88.0,
         1186.0,
         98,
-        fill=BTN_COLOR,
+        fill=config.BTN_COLOR,
         outline="")
 
     canvas.create_text(
@@ -101,7 +103,7 @@ def start_up():
         92,
         300,
         724,
-        fill=BTN_COLOR,
+        fill=config.BTN_COLOR,
         outline="")
 
     def get_pos(*args):
@@ -109,15 +111,6 @@ def start_up():
 
     func_canvas.bind("<Button-3>", get_pos)
     return window, canvas, func_canvas, (appImage, mainapp_btn)
-
-    canvas.create_text(
-        1000.0,
-        34.0,
-        anchor="nw",
-        text="Last updated: 23 June 2024\nModel Updated Date: 23 April 2024",
-        fill="#000000",
-        font=("OpenSansItalic Regular", 9 * -1)
-    )
 
 
 def nav_add_new():
@@ -131,9 +124,9 @@ def nav_model_management():
     from model_management_gui import create_model_management_screen
     create_model_management_screen(func_canvas)
 
+
 def nav_configuration():
     clear_canvas_func()
-    from model_management_gui import create_model_management_screen
     from configuration_gui import create_configuration_screen
     create_configuration_screen(func_canvas)
 
@@ -185,7 +178,7 @@ def clear_canvas_func():
 class WidgetLogger(logging.Handler):
     def __init__(self, widget):
         logging.Handler.__init__(self)
-        self.setLevel(logging.INFO)
+        self.setLevel(logging.ERROR)
         self.widget = widget
         self.widget.config(state='disabled')
 
